@@ -9,7 +9,7 @@ load("//fortran/private:runfiles.bzl", "rule_runfiles")
 
 def _fortran_library_impl(ctx):
     toolchain = ctx.toolchains["//fortran:toolchain_type"].fortran
-    compiled = compile_sources(ctx, toolchain)
+    compiled = compile_sources(ctx, toolchain, export_modules = True)
     cc_info, archives = library_link(ctx, compiled.compilation_outputs, toolchain)
     return [
         DefaultInfo(
@@ -25,6 +25,11 @@ fortran_library = rule(
     doc = "Compile a Fortran library, exporting modules and a native archive.",
     attrs = COMMON_ATTRS | {
         "alwayslink": attr.bool(doc = "Retain all objects from this library at final link."),
+        "_merge_modules": attr.label(
+            default = Label("//fortran/private:merge_modules"),
+            executable = True,
+            cfg = "exec",
+        ),
     },
     toolchains = ["//fortran:toolchain_type"] + use_cc_toolchain(),
     fragments = ["cpp"],

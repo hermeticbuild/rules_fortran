@@ -1,1 +1,10 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
 package(default_visibility = ["//fortran:__subpackages__"])
+
+cc_binary(
+    name = "merge_modules",
+    srcs = ["merge_modules.c"],
+    features = ["fully_static_link"],
+    linkstatic = True,
+)

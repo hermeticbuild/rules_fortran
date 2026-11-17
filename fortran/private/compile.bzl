@@ -46,12 +46,13 @@ def _check_options(ctx):
             if option.startswith(prefix):
                 fail("Fortran compilation does not support '{}' yet".format(prefix))
 
-def compile_sources(ctx, toolchain):
+def compile_sources(ctx, toolchain, export_modules = False):
     """Compile each source to a PIC object and module-output tree.
 
     Args:
         ctx: Rule analysis context.
         toolchain: Resolved FortranToolchainInfo.
+        export_modules: Merge module outputs for a library's dependents.
 
     Returns:
         A struct with compilation_outputs, objects, and module_dirs.
@@ -86,6 +87,25 @@ def compile_sources(ctx, toolchain):
         )
         objects.append(obj)
         module_dirs.append(module_dir)
+
+    if export_modules and module_dirs:
+        merged_dir = ctx.actions.declare_directory("{}_merged_modules".format(ctx.label.name))
+        merge_args = ctx.actions.args()
+        merge_args.add_all([merged_dir], expand_directories = False)
+        merge_args.add_all(module_dirs, expand_directories = False)
+        merge_args.use_param_file("@%s", use_always = True)
+        merge_args.set_param_file_format("multiline")
+        merger = ctx.attr._merge_modules[DefaultInfo].files_to_run
+        ctx.actions.run(
+            executable = merger,
+            arguments = [merge_args],
+            inputs = module_dirs,
+            tools = [merger],
+            outputs = [merged_dir],
+            mnemonic = "FortranMergeModules",
+            progress_message = "Merging Fortran modules for {}".format(ctx.label),
+        )
+        module_dirs = [merged_dir]
 
     outputs = cc_common.create_compilation_outputs(
         objects = depset(objects),

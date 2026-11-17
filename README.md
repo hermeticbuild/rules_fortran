@@ -26,9 +26,10 @@ C++ rule can depend on a `fortran_library` through an ordinary `cc_library`
 wrapper that declares the C header for any `bind(C)` procedures. The ruleset
 does not generate C headers.
 
-Each source has its own PIC object and module-output tree. A source using a
+Each source has its own PIC object and module-output tree. A library merges its
+source module files into one declared tree for dependents. A source using a
 module from another source needs a `deps` edge to that source's target, so the
-module tree is a declared compile input. Independent sources may share a
+merged tree is a declared compile input. Independent sources may share a
 library target. Empty `fortran_library` targets merge dependencies without
 creating an archive. Final Fortran binaries and tests use `cc_common.link`,
 including the CC toolchain's CRT, libc, builtins, sysroot, and linker policy.
@@ -84,8 +85,9 @@ repository.
   target, static archives and executables.
 - Libraries compile PIC objects only. Separate PIC and non-PIC outputs remain
   a later design decision.
-- Module-name collision and arbitrary compiler/module-format mismatch checks
-  are deferred. The source graph must express inter-target module use.
+- Cross-target module-name collision and arbitrary compiler/module-format
+  mismatch checks are deferred. The source graph must express inter-target
+  module use. Duplicate module filenames within one library fail at merge.
 - GNU Fortran, shared libraries, Flang-driven linking, OpenMP, coarrays, MPI,
   coverage, sanitizers, and Fortran ThinLTO are not implemented.
 - Path mapping is advertised for Fortran compile actions. File arguments and
