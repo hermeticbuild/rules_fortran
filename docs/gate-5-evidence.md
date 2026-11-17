@@ -8,6 +8,11 @@ an explicit Linux x86_64 execution / Linux x86_64 musl target registration.
 The consumer module uses Hermetic LLVM as a dev dependency. This gate uses
 source-built Flang 23.1.2, target intrinsic modules, Flang-RT and the
 Hermetic LLVM CC toolchain. It does not test an unpublished Flang prebuilt.
+The toolchain integration selects Flang's `--target` flag from target platform
+constraints. The production ruleset accepts those flags through the generic
+`fortran_toolchain.target_flags` attribute and has no `@llvm` labels. Its LLVM
+module dependency is development-only; an independent consumer can load the
+public rules without depending on LLVM.
 
 ## Failures reproduced before the fixes
 
@@ -76,6 +81,19 @@ numerical test-data wrappers.
 - The ruleset's own integration module built 19 targets and ran all 14 tests
   successfully with mapped paths and `--nocache_test_results` after this
   change (invocation `208667ba-33d8-45bb-95e7-e7515d8a259b`).
+- After moving target selection into the toolchain registration, the ruleset's
+  14 integration tests passed uncached (invocation
+  `d251d292-bf19-4b6c-8550-b164f6cb19fa`), as did all 22 consumer and
+  BLAS/LAPACK example tests (invocation
+  `b1fc7f8b-015f-4fd9-9a2c-ec1b91ecdb4c`). An independent temporary
+  Bzlmod consumer depending only on `rules_fortran` loaded all public rule
+  files; its module graph contained no LLVM dependency (invocation
+  `c1c1d2b7-7463-46cb-b6c4-f19b96ad4078`). The complete 6,015-target
+  BLAS/LAPACK/LAPACKE build passed again (invocation
+  `5a6292b6-d89a-4e5e-a7dd-e2c5b3967270`). The `FortranCompile` action for
+  the consumer's preprocessed test contains the selected
+  `--target=x86_64-linux-musl` flag (invocation
+  `b2a77f83-e3fa-4c30-bc48-d1c5a24374f4`).
 - `aquery` for the consumer's preprocessed test shows the Flang executable
   and runfiles, intrinsic tree, merged `math_mod` tree, and source as declared
   compile inputs. The command uses `--target=x86_64-linux-musl`, both
@@ -106,6 +124,6 @@ execution/target pair. GNU Fortran, the unpublished prebuilt archive, other
 platforms, and arbitrary compiler/module compatibility remain unqualified.
 The consumer used Bazel 9.1.0 and the ruleset integration
 used Bazel 9.3.2. The module's declared Bazel 8 compatibility has not been
-validated here. The final dependency gate will remove the normal
-`@llvm` module dependency from this ruleset; LLVM-specific inputs belong in
-integration/dev setup or the consumer's selected toolchain.
+validated here. Other execution/target pairs will be qualified after the
+minimal Flang prebuilts are available. Their toolchain registrations must
+select their own compiler flags, intrinsic modules, and runtime.
