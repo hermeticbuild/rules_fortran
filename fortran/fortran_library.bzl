@@ -1,5 +1,6 @@
 """Fortran libraries exporting modules and native CcInfo."""
 
+load("@rules_cc//cc:find_cc_toolchain.bzl", "use_cc_toolchain")
 load("//fortran/private:attrs.bzl", "COMMON_ATTRS")
 load("//fortran/private:compile.bzl", "compile_sources")
 load("//fortran/private:link.bzl", "library_link")
@@ -25,6 +26,6 @@ fortran_library = rule(
     attrs = COMMON_ATTRS | {
         "alwayslink": attr.bool(doc = "Retain all objects from this library at final link."),
     },
-    toolchains = ["//fortran:toolchain_type", "@rules_cc//cc:toolchain_type"],
+    toolchains = ["//fortran:toolchain_type"] + use_cc_toolchain(),
     fragments = ["cpp"],
 )

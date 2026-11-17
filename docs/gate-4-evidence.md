@@ -29,10 +29,10 @@ not match this gate's x86_64 Fortran toolchain registration.
 
 ## Observed behavior
 
-- The positive suite passed all 14 tests with mapped output paths (BuildBuddy
-  invocations `f9cd1779-4abb-4bb1-b150-398200fc0a44` and, after the
-  audit fixes, `be8793de-4314-44f6-a84f-429d63112298`). It covers a Fortran
-  main, transitive and diamond module use, an empty aggregate, independent
+- The positive suite passed all 14 tests with mapped output paths. It passed
+  again after the `rules_cc` toolchain helper change (BuildBuddy invocation
+  `baba4b0e-47ed-4a1a-bf18-816e62a73b17`). It covers a Fortran main,
+  transitive and diamond module use, an empty aggregate, independent
   sources in one library, fixed and preprocessed sources, a generated source,
   submodules, declared INCLUDE data, C calling a `bind(C)` Fortran library,
   C header propagation through `CcInfo`, `alwayslink` BLOCK DATA, linker
@@ -45,7 +45,8 @@ not match this gate's x86_64 Fortran toolchain registration.
 - `aquery` of `chain_test` and `c_transitive_headers_test` shows Clang++ from
   the selected CC toolchain as the final linker, 88 Flang-RT runtime object
   arguments in each link, and the Fortran library's probe link option in the
-  C test link (invocation `cde64baf-1629-4941-9520-af95723aa2df`). The
+  C test link (invocations `cde64baf-1629-4941-9520-af95723aa2df` and,
+  after the helper change, `1e9fbf3d-3dfd-4276-af73-321d473c1c08`). The
   Fortran compiler does not drive these links.
 - `aquery` of the compile actions shows one action per source, with only that
   source, the compiler runfiles, intrinsic module tree, and dependency module
@@ -65,14 +66,19 @@ not match this gate's x86_64 Fortran toolchain registration.
   `e2c3d254-e36e-4eee-a758-d8d71971adc3`). `hello_test` also built and
   ran in `opt` and `dbg` (invocations
   `3eb01c11-edeb-4e72-b4db-48ebd0a2b14b` and
-  `8145b943-09ac-4748-b89e-d50646a72b9b`). User
-  `copts` follow those defaults. The `fastbuild` default is `-O0`.
+  `8145b943-09ac-4748-b89e-d50646a72b9b`). User `copts` follow those
+  defaults. The `fastbuild` default is `-O0`.
 
 `buildifier -mode=check -lint=warn` passes for the Starlark and BUILD files.
 The rule code keeps propagated modules and definitions as depsets until
 `Args` or provider consumption. Source-to-source module dependencies still
 need explicit target edges; module collision and compiler-format validation
 remain v2 work.
+
+Fortran rules declare the mandatory CC dependency with `use_cc_toolchain()`.
+The link implementation obtains `CcToolchainInfo` with `find_cc_toolchain(ctx)`
+and configures features from that result, following the public `rules_cc` helper
+contract rather than accessing `ctx.toolchains` by a manually written key.
 
 ## Remaining qualification
 

@@ -1,5 +1,6 @@
 """Bazel tests compiled from Fortran programs."""
 
+load("@rules_cc//cc:find_cc_toolchain.bzl", "use_cc_toolchain")
 load("//fortran/private:attrs.bzl", "COMMON_ATTRS")
 load("//fortran/private:executable.bzl", "fortran_executable_impl")
 
@@ -13,6 +14,6 @@ fortran_test = rule(
         "env": attr.string_dict(doc = "Environment variables supplied to the test process."),
     },
     test = True,
-    toolchains = ["//fortran:toolchain_type", "@rules_cc//cc:toolchain_type"],
+    toolchains = ["//fortran:toolchain_type"] + use_cc_toolchain(),
     fragments = ["cpp"],
 )
