@@ -1,4 +1,4 @@
-"""Shared public attributes and private platform constraints."""
+"""Shared public attributes."""
 
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
@@ -27,7 +27,4 @@ COMMON_ATTRS = {
         allow_files = True,
         doc = "Runtime files added to runfiles; never compile inputs.",
     ),
-    "_linux": attr.label(default = Label("@platforms//os:linux")),
-    "_x86_64": attr.label(default = Label("@platforms//cpu:x86_64")),
-    "_musl": attr.label(default = Label("@llvm//constraints/libc:musl")),
 }

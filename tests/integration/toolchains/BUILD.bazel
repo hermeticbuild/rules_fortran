@@ -6,6 +6,9 @@ fortran_toolchain(
     compiler_kind = "flang",
     intrinsic_modules = "@llvm//runtimes/flang:intrinsic_modules",
     runtime = "@llvm//runtimes/flang:runtime",
+    target_flags = select({
+        "@llvm//platforms/config:linux_x86_64_musl": ["--target=x86_64-linux-musl"],
+    }),
 )
 
 toolchain(

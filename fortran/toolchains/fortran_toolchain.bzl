@@ -13,6 +13,7 @@ def _fortran_toolchain_impl(ctx):
         compiler_kind = ctx.attr.compiler_kind,
         intrinsic_modules = modules,
         runtime = ctx.attr.runtime[CcInfo],
+        target_flags = ctx.attr.target_flags,
     )
     return [platform_common.ToolchainInfo(fortran = info)]
 
@@ -41,6 +42,9 @@ fortran_toolchain = rule(
             providers = [CcInfo],
             mandatory = True,
             doc = "Target-configured Fortran runtime linking closure.",
+        ),
+        "target_flags": attr.string_list(
+            doc = "Compiler target options selected for this target platform.",
         ),
     },
 )

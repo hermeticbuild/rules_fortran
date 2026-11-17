@@ -70,7 +70,7 @@ def compile_sources(ctx, toolchain, export_modules = False):
         obj = ctx.actions.declare_file("{}_objects/{}.o".format(ctx.label.name, index))
         module_dir = ctx.actions.declare_directory("{}_modules/{}".format(ctx.label.name, index))
         args = ctx.actions.args()
-        add_compile_arguments(args, ctx, src, obj, module_dir, toolchain.intrinsic_modules, dep_module_dirs, defines)
+        add_compile_arguments(args, ctx, src, obj, module_dir, toolchain.intrinsic_modules, toolchain.target_flags, dep_module_dirs, defines)
         inputs = depset(
             direct = [toolchain.intrinsic_modules, src] + ctx.files.additional_compiler_inputs,
             transitive = [dep_module_dirs],

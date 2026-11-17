@@ -1,14 +1,6 @@
-"""Flang compilation options for the qualified Hermetic LLVM target pair."""
+"""Flang compilation options from the selected Fortran toolchain."""
 
-def target_triple(ctx):
-    """Derive the qualified LLVM target triple from platform constraints."""
-    if (ctx.target_platform_has_constraint(ctx.attr._linux[platform_common.ConstraintValueInfo]) and
-        ctx.target_platform_has_constraint(ctx.attr._x86_64[platform_common.ConstraintValueInfo]) and
-        ctx.target_platform_has_constraint(ctx.attr._musl[platform_common.ConstraintValueInfo])):
-        return "x86_64-linux-musl"
-    fail("Flang currently supports only the Linux x86_64 musl target platform")
-
-def add_compile_arguments(args, ctx, src, obj, module_dir, intrinsic_modules, dep_module_dirs, propagated_defines):
+def add_compile_arguments(args, ctx, src, obj, module_dir, intrinsic_modules, target_flags, dep_module_dirs, propagated_defines):
     """Add Flang target, module, and source options to an action Args.
 
     Args:
@@ -18,10 +10,11 @@ def add_compile_arguments(args, ctx, src, obj, module_dir, intrinsic_modules, de
         obj: Declared object File.
         module_dir: Declared module directory tree.
         intrinsic_modules: Target intrinsic module directory tree.
+        target_flags: Compiler target flags selected by the toolchain.
         dep_module_dirs: Lazy depset of dependency module trees.
         propagated_defines: Lazy depset of propagated definitions.
     """
-    args.add("--target=" + target_triple(ctx))
+    args.add_all(target_flags)
     args.add("-fPIC")
     compilation_mode = ctx.var["COMPILATION_MODE"]
     if compilation_mode == "dbg":

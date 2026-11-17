@@ -48,6 +48,9 @@ fortran_toolchain(
     compiler = "@llvm//tools:flang",
     intrinsic_modules = "@llvm//runtimes/flang:intrinsic_modules",
     runtime = "@llvm//runtimes/flang:runtime",
+    target_flags = select({
+        "@llvm//platforms/config:linux_x86_64_musl": ["--target=x86_64-linux-musl"],
+    }),
 )
 
 toolchain(
@@ -66,9 +69,12 @@ toolchain(
 The root module registers that package with
 `register_toolchains("//toolchains:all")` and separately registers a compatible
 Hermetic LLVM CC toolchain. The compiler is execution configured; intrinsic
-modules and runtime are target configured. The Flang adapter derives its LLVM
-triple from the selected target constraints. It does not read a deprecated GNU
-system-name field or store a manually supplied triple in the toolchain.
+modules and runtime are target configured. The Flang adapter uses target flags
+from the selected Fortran toolchain. This integration computes
+`--target` from platform constraints with `select()`; production ruleset code
+contains no `@llvm` labels. It does not read a deprecated GNU system-name
+field. Other Flang target pairs require their own qualified compiler, modules,
+runtime, and selected target flags.
 
 The minimal Flang prebuilt release is not yet published. Until it is indexed,
 source-bootstrap builds select source-built ThinLTO Flang with

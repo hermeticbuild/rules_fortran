@@ -7,5 +7,6 @@ FortranToolchainInfo = provider(
         "compiler_kind": "Compiler adapter name: flang or gfortran.",
         "intrinsic_modules": "Target-configured intrinsic-module directory tree artifact.",
         "runtime": "Target-configured CcInfo for the Fortran runtime.",
+        "target_flags": "Compiler flags selected by the toolchain integration for the target platform.",
     },
 )
