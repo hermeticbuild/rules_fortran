@@ -33,6 +33,10 @@ def add_compile_arguments(args, ctx, src, obj, module_dir, intrinsic_modules, de
     else:
         fail("Unsupported Fortran compilation mode '{}'".format(compilation_mode))
     args.add_all([intrinsic_modules], format_each = "-fintrinsic-modules-path=%s", expand_directories = False)
+
+    # Flang reopens hashed intrinsic dependencies using their located relative
+    # path. Keep "." after the module directory so that path remains readable.
+    args.add("-fintrinsic-modules-path=.")
     args.add("-module-dir")
     args.add_all([module_dir], expand_directories = False)
     args.add_all([module_dir], before_each = "-I", expand_directories = False)

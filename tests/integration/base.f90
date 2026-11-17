@@ -1,7 +1,8 @@
 module base_m
-  integer, save :: state = 20
+  use, intrinsic :: iso_c_binding, only: c_int
+  integer(c_int), save :: state = 20
 contains
-  integer function base_value()
+  integer(c_int) function base_value()
     base_value = state
   end function base_value
 end module base_m
