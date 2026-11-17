@@ -92,6 +92,8 @@ The full LAPACK target graph was built, while runtime validation covered its
 four demo tests, not every LAPACK numerical test-data wrapper. This gate
 qualifies only the stated execution/target pair. GNU Fortran, the unpublished
 prebuilt archive, other platforms, and arbitrary compiler/module compatibility
-remain unqualified. The final dependency gate will remove the normal
+remain unqualified. The consumer used Bazel 9.1.0 and the ruleset integration
+used Bazel 9.3.2. The module's declared Bazel 8 compatibility has not been
+validated here. The final dependency gate will remove the normal
 `@llvm` module dependency from this ruleset; LLVM-specific inputs belong in
 integration/dev setup or the consumer's selected toolchain.
