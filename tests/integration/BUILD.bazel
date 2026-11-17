@@ -1,0 +1,283 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_fortran//fortran:fortran_binary.bzl", "fortran_binary")
+load("@rules_fortran//fortran:fortran_library.bzl", "fortran_library")
+load("@rules_fortran//fortran:fortran_test.bzl", "fortran_test")
+
+platform(
+    name = "linux_x86_64_musl_remote",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+        "@llvm//constraints/libc:musl",
+    ],
+    exec_properties = {
+        "container-image": "docker://ubuntu:22.04",
+        "Arch": "amd64",
+        "OSFamily": "Linux",
+    },
+)
+
+platform(
+    name = "linux_x86_64_gnu_remote",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+        "@llvm//constraints/libc:gnu.2.41",
+    ],
+    exec_properties = {
+        "container-image": "docker://ubuntu:22.04",
+        "Arch": "amd64",
+        "OSFamily": "Linux",
+    },
+)
+
+fortran_test(
+    name = "hello_test",
+    srcs = ["hello.f90"],
+    features = ["fully_static_link"],
+)
+
+fortran_library(
+    name = "base",
+    srcs = ["base.f90"],
+)
+
+fortran_library(
+    name = "left",
+    srcs = ["left.f90"],
+    deps = [":base"],
+)
+
+fortran_library(
+    name = "right",
+    srcs = ["right.f90"],
+    deps = [":base"],
+)
+
+fortran_library(
+    name = "diamond",
+    deps = [
+        ":left",
+        ":right",
+    ],
+)
+
+fortran_test(
+    name = "chain_test",
+    srcs = ["chain_main.f90"],
+    features = ["fully_static_link"],
+    deps = [":diamond"],
+)
+
+fortran_binary(
+    name = "chain_binary",
+    srcs = ["chain_main.f90"],
+    features = ["fully_static_link"],
+    deps = [":diamond"],
+)
+
+fortran_library(
+    name = "multi_source",
+    srcs = [
+        "left.f90",
+        "right.f90",
+    ],
+    deps = [":base"],
+)
+
+fortran_test(
+    name = "multi_source_test",
+    srcs = ["chain_main.f90"],
+    features = ["fully_static_link"],
+    deps = [":multi_source"],
+)
+
+fortran_library(
+    name = "interop",
+    srcs = ["interop.f90"],
+)
+
+cc_library(
+    name = "interop_c_api",
+    hdrs = ["interop.h"],
+    deps = [":interop"],
+)
+
+cc_test(
+    name = "c_main_test",
+    srcs = ["c_main.c"],
+    features = ["fully_static_link"],
+    linkstatic = True,
+    deps = [":interop_c_api"],
+)
+
+cc_library(
+    name = "native_headers",
+    hdrs = ["cc_dependency.h"],
+)
+
+fortran_library(
+    name = "fortran_with_native_dep",
+    srcs = ["interop.f90"],
+    linkopts = ["-Wl,--defsym=fortran_linkopt_probe=1"],
+    deps = [":native_headers"],
+)
+
+cc_test(
+    name = "c_transitive_headers_test",
+    srcs = ["c_transitive_headers.c"],
+    features = ["fully_static_link"],
+    linkstatic = True,
+    deps = [":fortran_with_native_dep"],
+)
+
+fortran_library(
+    name = "configured",
+    srcs = ["preprocessed.f90"],
+    copts = [
+        "-O2",
+        "-w",
+    ],
+    defines = ["FORT_VALUE=42"],
+)
+
+fortran_test(
+    name = "preprocessed_test",
+    srcs = ["preprocessed_main.f90"],
+    features = ["fully_static_link"],
+    deps = [":configured"],
+)
+
+fortran_library(
+    name = "fixed",
+    srcs = ["fixed.f"],
+)
+
+fortran_test(
+    name = "fixed_test",
+    srcs = ["fixed_main.f90"],
+    features = ["fully_static_link"],
+    deps = [":fixed"],
+)
+
+fortran_library(
+    name = "parent",
+    srcs = ["parent.f90"],
+)
+
+fortran_library(
+    name = "child",
+    srcs = ["child.f90"],
+    deps = [":parent"],
+)
+
+fortran_test(
+    name = "submodule_test",
+    srcs = ["submodule_main.f90"],
+    features = ["fully_static_link"],
+    deps = [":child"],
+)
+
+fortran_library(
+    name = "runfiles_data",
+    data = ["payload.txt"],
+)
+
+fortran_test(
+    name = "runfiles_test",
+    size = "small",
+    timeout = "short",
+    srcs = ["runfiles_main.f90"],
+    args = ["ready"],
+    env = {"FORT_ENV": "ready"},
+    features = ["fully_static_link"],
+    flaky = False,
+    deps = [":runfiles_data"],
+)
+
+write_file(
+    name = "generated_source",
+    out = "generated.F90",
+    content = [
+        "program generated",
+        "  if (6 * 7 /= 42) stop 1",
+        "end program generated",
+    ],
+)
+
+fortran_test(
+    name = "generated_test",
+    srcs = [":generated_source"],
+    features = ["fully_static_link"],
+)
+
+fortran_test(
+    name = "include_test",
+    srcs = ["include_main.f90"],
+    additional_compiler_inputs = ["value.inc"],
+    features = ["fully_static_link"],
+)
+
+fortran_library(
+    name = "local_defined",
+    srcs = ["local_defined.F90"],
+    local_defines = ["FORT_PRIVATE=1"],
+)
+
+fortran_test(
+    name = "local_defines_test",
+    srcs = ["local_main.F90"],
+    features = ["fully_static_link"],
+    deps = [":local_defined"],
+)
+
+fortran_library(
+    name = "block_data",
+    srcs = ["block_data.f"],
+    alwayslink = True,
+)
+
+fortran_test(
+    name = "alwayslink_test",
+    srcs = ["block_main.f90"],
+    features = ["fully_static_link"],
+    deps = [":block_data"],
+)
+
+fortran_test(
+    name = "linker_inputs_test",
+    srcs = ["hello.f90"],
+    additional_linker_inputs = ["version.map"],
+    features = ["fully_static_link"],
+    linkopts = ["-Wl,--version-script=version.map"],
+)
+
+fortran_test(
+    name = "missing_module_test",
+    srcs = ["chain_main.f90"],
+    features = ["fully_static_link"],
+    tags = ["manual"],
+)
+
+fortran_test(
+    name = "undeclared_include_test",
+    srcs = ["include_main.f90"],
+    features = ["fully_static_link"],
+    tags = ["manual"],
+)
+
+fortran_test(
+    name = "unsupported_feature_test",
+    srcs = ["hello.f90"],
+    features = ["thin_lto"],
+    tags = ["manual"],
+)
+
+fortran_test(
+    name = "disable_pic_test",
+    srcs = ["hello.f90"],
+    copts = ["-fno-pic"],
+    tags = ["manual"],
+)

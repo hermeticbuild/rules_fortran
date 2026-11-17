@@ -1,0 +1,21 @@
+module(
+    name = "rules_fortran_integration",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "llvm", version = "0.8.27")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.25")
+bazel_dep(name = "rules_fortran", version = "0.0.0")
+local_path_override(
+    module_name = "rules_fortran",
+    path = "../..",
+)
+
+llvm_toolchains = use_extension("@llvm//extensions:toolchain.bzl", "toolchain")
+use_repo(llvm_toolchains, "llvm_toolchains")
+
+register_toolchains("@llvm_toolchains//:all")
+
+register_toolchains("//toolchains:all")

@@ -1,0 +1,18 @@
+load("@rules_fortran//fortran/toolchains:declare_toolchains.bzl", "declare_toolchains")
+
+declare_toolchains(toolchains = [{
+    "name": "flang_linux_x86_64_to_linux_x86_64_musl",
+    "compiler_kind": "flang",
+    "compiler": "@llvm//tools:flang",
+    "intrinsic_modules": "@llvm//runtimes/flang:intrinsic_modules",
+    "runtime": "@llvm//runtimes/flang:runtime",
+    "exec_compatible_with": [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    "target_compatible_with": [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+        "@llvm//constraints/libc:musl",
+    ],
+}])
