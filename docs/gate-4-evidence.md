@@ -30,8 +30,9 @@ not match this gate's x86_64 Fortran toolchain registration.
 ## Observed behavior
 
 - The positive suite passed all 14 tests with mapped output paths. It passed
-  again after the `rules_cc` toolchain helper change (BuildBuddy invocation
-  `baba4b0e-47ed-4a1a-bf18-816e62a73b17`). It covers a Fortran main,
+  again after declaring the Fortran implementation and registration directly
+  in the integration module (BuildBuddy invocation
+  `899f6b70-e051-479a-b461-604c6e2a2bbf`). It covers a Fortran main,
   transitive and diamond module use, an empty aggregate, independent
   sources in one library, fixed and preprocessed sources, a generated source,
   submodules, declared INCLUDE data, C calling a `bind(C)` Fortran library,
