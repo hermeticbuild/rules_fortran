@@ -58,7 +58,9 @@ Use the same flags with `build '@blas//:*' '@lapack//:*' '@lapacke//:*'` for
 the full target set. The runtime examples use `test
 //third_party/rules_fortran/examples/blas:all` plus the four LAPACK targets
 `lu`, `chol`, `svd`, and `mixed` under
-`//third_party/rules_fortran/examples/lapack`.
+`//third_party/rules_fortran/examples/lapack`. Use `test
+//third_party/rules_fortran/examples/lapack:all` for the complete LAPACK
+numerical test-data wrappers.
 
 ## Observed after the fixes
 
@@ -87,12 +89,22 @@ the full target set. The runtime examples use `test
   `llvm readelf` show an x86-64 static ELF executable with no `INTERP` or
   dynamic segment. The `la_constants` merged tree contains
   `la_constants.mod`.
+- All 98 LAPACK tests built and ran. 97 passed. The `dgd` numerical wrapper
+  failed: `DDRGES` reported `DGGES` returning `INFO=9` for the same case and
+  `1 out of 1555` DGS driver checks failed (invocation
+  `8c418131-c180-471d-90c4-7ce9d5c272c5`). An uncached fastbuild rerun
+  reproduced it (invocation `1b67fb46-095c-44af-ab12-877bdb1c5925`).
+  Rebuilding and rerunning that test in Bazel `opt` mode reproduced the same
+  case (invocation `5b911a0a-d442-4d45-b8d5-8dafe67a3f82`). The failure
+  occurs after a successful compile, native link, and remote execution. Its
+  numerical cause has not been established; this gate does not claim the
+  complete LAPACK numerical suite is green.
 
-The full LAPACK target graph was built, while runtime validation covered its
-four demo tests, not every LAPACK numerical test-data wrapper. This gate
-qualifies only the stated execution/target pair. GNU Fortran, the unpublished
-prebuilt archive, other platforms, and arbitrary compiler/module compatibility
-remain unqualified. The consumer used Bazel 9.1.0 and the ruleset integration
+The full LAPACK target graph was built, and every declared numerical wrapper
+ran with the one failure above. This gate qualifies only the stated
+execution/target pair. GNU Fortran, the unpublished prebuilt archive, other
+platforms, and arbitrary compiler/module compatibility remain unqualified.
+The consumer used Bazel 9.1.0 and the ruleset integration
 used Bazel 9.3.2. The module's declared Bazel 8 compatibility has not been
 validated here. The final dependency gate will remove the normal
 `@llvm` module dependency from this ruleset; LLVM-specific inputs belong in
