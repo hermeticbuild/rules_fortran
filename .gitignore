@@ -1,0 +1,2 @@
+bazel-*
+tests/integration/MODULE.bazel.lock
