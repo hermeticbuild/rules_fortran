@@ -33,6 +33,7 @@ platform(
     },
 )
 
+# The Linux runners use glibc and do not have the musl loader.
 LINK_FEATURES = select({
     "@llvm//platforms/config:musl": ["fully_static_link"],
     "//conditions:default": [],

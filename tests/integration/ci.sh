@@ -21,21 +21,27 @@ while read -r platform os cpu triple format driver; do
   fi
   matched=1
   echo "=== $FLANG_ARCHIVE -> $platform ==="
-  flags=("--platforms=@llvm//platforms:$platform")
+  native=false
+  if [[ "$os" == "${NATIVE_OS:-}" && "$cpu" == "${NATIVE_CPU:-}" ]]; then
+    native=true
+  fi
+  flags=()
+  # Exercise Bazel's default platform for native Linux glibc tests.
+  if [[ "$native" != true || "$os" != linux || "$platform" != "linux_$cpu" ]]; then
+    flags+=("--platforms=@llvm//platforms:$platform")
+  fi
   if [[ "${RUNNER_OS:-}" != Windows ]]; then
     # Bazel needs sandboxing for mapped MinGW actions. Windows runners
     # execute these actions locally.
     flags+=(--experimental_output_paths=strip)
   fi
-  if [[ "${NATIVE_OS:-}" == linux ]]; then
-    # Build the module merge tool for the local CPU with static musl.
-    flags+=("--host_platform=@llvm//platforms:linux_${NATIVE_CPU}_musl")
-  fi
   if [[ "$driver" == clang-cl ]]; then
     flags+=(--repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1 --repo_env=BAZEL_WINDOWS_SDK_EULA=1)
   fi
-  if [[ "$os" == "${NATIVE_OS:-}" && "$cpu" == "${NATIVE_CPU:-}" ]]; then
-    flags+=("--extra_toolchains=//toolchains/native_test:${os}_${cpu}")
+  if [[ "$native" == true ]]; then
+    if [[ "$os" != linux || "$platform" != "linux_$cpu" ]]; then
+      flags+=("--extra_toolchains=//toolchains/native_test:${os}_${cpu}")
+    fi
     if [[ "$os" == windows ]]; then
       flags+=(--enable_runfiles)
     fi

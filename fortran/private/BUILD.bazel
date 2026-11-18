@@ -5,9 +5,4 @@ package(default_visibility = ["//fortran:__subpackages__"])
 cc_binary(
     name = "merge_modules",
     srcs = ["merge_modules.cc"],
-    features = select({
-        "@platforms//os:linux": ["fully_static_link"],
-        "//conditions:default": [],
-    }),
-    linkstatic = True,
 )

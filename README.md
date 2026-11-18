@@ -7,19 +7,16 @@ link against Fortran libraries through ordinary Bazel dependencies.
 ## Quickstart
 
 Install [Bazelisk](https://github.com/bazelbuild/bazelisk), then try the
-included examples on Linux x86_64.
+included examples on Linux x86_64 or macOS Arm64.
 
 ```sh
 git clone https://github.com/hermeticbuild/rules_fortran.git
 cd rules_fortran/tests/integration
-bazelisk test //:hello_test //:chain_test //:c_main_test \
-  --platforms=@llvm//platforms:linux_x86_64_musl \
-  --host_platform=@llvm//platforms:linux_x86_64_musl
+bazelisk test //:hello_test //:chain_test //:c_main_test
 ```
 
-On macOS Arm64, use `--platforms=@llvm//platforms:macos_aarch64` and omit
-`--host_platform`. The integration module downloads Flang 23.1.6 and uses
-Hermetic LLVM to build the target modules and runtime.
+The examples use the published Flang compiler and build the target modules
+and runtime with Hermetic LLVM.
 
 To use the rules in your own Bzlmod project, follow the
 [toolchain setup guide](docs/toolchains.md). It uses a Git checkout of
@@ -44,10 +41,6 @@ fortran_library(
 fortran_test(
     name = "arithmetic_test",
     srcs = ["arithmetic_test.f90"],
-    features = select({
-        "@llvm//platforms/config:musl": ["fully_static_link"],
-        "//conditions:default": [],
-    }),
     deps = [":arithmetic"],
 )
 ```
@@ -81,20 +74,10 @@ The [interop example](tests/integration/BUILD.bazel) links
 [a C main](tests/integration/c_main.c) with
 [a Fortran routine](tests/integration/interop.f90).
 
-## Tested platforms
+## Platforms
 
-Native CI uses Bazel 9.3.2 and Flang 23.1.6 on x86_64 and Arm64.
-
-| OS | Native targets |
-| --- | --- |
-| Linux | musl and glibc |
-| macOS | macOS system libraries |
-| Windows | MinGW and MSVC |
-
-See the [CI workflow](.github/workflows/ci.yml) and
-[integration evidence](docs/gate-5-evidence.md) for coverage. GNU Fortran
-and shared libraries are planned. The [toolchain guide](docs/toolchains.md)
-describes the current rule behavior and limits.
+Flang works on x86_64 and Arm64 for Linux (glibc and musl), macOS, and
+Windows (MinGW and MSVC). GNU Fortran and shared libraries are planned.
 
 ## License
 

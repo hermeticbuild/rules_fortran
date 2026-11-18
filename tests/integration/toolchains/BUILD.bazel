@@ -24,6 +24,15 @@ DEFAULT_GLIBC_CONFIGS = {
     "linux_x86_64_gnu": "linux_x86_64_gnu.2.28",
 }
 
+TARGET_CONFIGS = {
+    target: DEFAULT_GLIBC_CONFIGS.get(target, target)
+    for target in TARGET_TRIPLES
+} | {
+    # Bazel's default host platform leaves the libc constraint unset.
+    target.replace("_gnu", "_unconstrained"): target.replace("_gnu", "_unconstrained")
+    for target in DEFAULT_GLIBC_CONFIGS
+}
+
 # Match the deployment target and CRT used by the selected C/C++ toolchain.
 EXTRA_TARGET_FLAGS = {
     "macos_aarch64": ["-mmacosx-version-min=14.0"],
@@ -62,7 +71,7 @@ fortran_toolchain(
             "@platforms//os:" + os,
             "@platforms//cpu:" + cpu,
         ],
-        target_settings = ["@llvm//platforms/config:" + DEFAULT_GLIBC_CONFIGS.get(target, target)],
+        target_settings = ["@llvm//platforms/config:" + config],
         toolchain = ":flang",
         toolchain_type = "@rules_fortran//fortran:toolchain_type",
     )
@@ -75,5 +84,5 @@ fortran_toolchain(
         "x86_64",
         "aarch64",
     ]
-    for target in TARGET_TRIPLES
+    for target, config in TARGET_CONFIGS.items()
 ]

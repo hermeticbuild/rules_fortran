@@ -2,26 +2,19 @@
 
 ## Set up a Bzlmod consumer
 
-This example supports Linux x86_64 with musl and macOS Arm64. Clone
+This example uses Linux x86_64 or macOS Arm64. Clone
 [`rules_fortran`](https://github.com/hermeticbuild/rules_fortran) next to your
-project. Use Bazelisk with `9.3.2` in your project's `.bazelversion`.
+project and copy its [`.bazelversion`](../.bazelversion) into your project.
 
-Add the following to your `MODULE.bazel`. The Hermetic LLVM override
-selects the revision that indexes the published Flang 23.1.6 archive.
+Set up your `MODULE.bazel` as shown below. Copy the `llvm` and `platforms`
+dependencies and the LLVM archive override from the
+[integration module](../tests/integration/MODULE.bazel).
 
 ```starlark
 module(name = "fortran_example")
 
-bazel_dep(name = "llvm", version = "0.8.27")
-bazel_dep(name = "platforms", version = "1.1.0")
+# Copy the llvm and platforms dependencies and the LLVM archive override here.
 bazel_dep(name = "rules_fortran", version = "0.0.0")
-
-archive_override(
-    module_name = "llvm",
-    integrity = "sha256-zNZTSmBqcpp8ZyCAGPx/isIo13grecZzU1aXCkZnyN0=",
-    strip_prefix = "hermetic-llvm-d316387adbe84b7754ef183c366396bda120962e",
-    urls = ["https://github.com/hermeticbuild/hermetic-llvm/archive/d316387adbe84b7754ef183c366396bda120962e.tar.gz"],
-)
 
 local_path_override(
     module_name = "rules_fortran",
@@ -57,6 +50,7 @@ fortran_toolchain(
     intrinsic_modules = "@llvm//runtimes/flang:intrinsic_modules",
     runtime = "@llvm//runtimes/flang:runtime",
     target_flags = select({
+        "@llvm//platforms/config:linux_x86_64_gnu": ["--target=x86_64-linux-gnu"],
         "@llvm//platforms/config:linux_x86_64_musl": ["--target=x86_64-linux-musl"],
         "@llvm//platforms/config:macos_aarch64": [
             "--target=aarch64-apple-darwin",
@@ -66,13 +60,12 @@ fortran_toolchain(
 )
 
 toolchain(
-    name = "linux_x86_64_musl",
+    name = "linux_x86_64",
     exec_compatible_with = [
         "@platforms//cpu:x86_64",
         "@platforms//os:linux",
     ],
     target_compatible_with = [
-        "@llvm//constraints/libc:musl",
         "@platforms//cpu:x86_64",
         "@platforms//os:linux",
     ],
@@ -96,17 +89,11 @@ toolchain(
 ```
 
 Copy the [module and test example](../README.md#build-a-module-and-test-it)
-into the project root. On a Linux x86_64 host, run the test with both
-platforms set to musl.
+into the project root and run the test.
 
 ```sh
-bazelisk test //:arithmetic_test \
-  --platforms=@llvm//platforms:linux_x86_64_musl \
-  --host_platform=@llvm//platforms:linux_x86_64_musl
+bazelisk test //:arithmetic_test
 ```
-
-On macOS Arm64, use `--platforms=@llvm//platforms:macos_aarch64` and omit
-`--host_platform`.
 
 The [integration registrations](../tests/integration/toolchains/BUILD.bazel)
 show how to select flags and runtime options for other targets.
@@ -142,18 +129,3 @@ Flang uses `-O0` for `fastbuild`, `-O0 -g` for `dbg`, and `-O2` for
 `opt`. Local `copts` follow those defaults. Compile actions support Bazel
 path mapping. Use label inputs instead of literal output paths in
 `copts`. Archive and executable link mapping follow the C/C++ toolchain.
-
-## Reproduce integration CI
-
-Run [`ci.sh`](../tests/integration/ci.sh) from `tests/integration`.
-For example, on an Arm64 Mac, run the following.
-
-```sh
-FLANG_ARCHIVE=darwin-arm64 NATIVE_OS=macos NATIVE_CPU=aarch64 bash ci.sh
-```
-
-The script builds and runs the suite on the matching platform and checks
-the Flang archive, compiler target, link inputs and executable headers.
-`TARGET_FILTER` selects a single target for a local probe. See the
-[Gate 4 evidence](gate-4-evidence.md) for the source build and the
-[Gate 5 evidence](gate-5-evidence.md) for downstream and prebuilt checks.
