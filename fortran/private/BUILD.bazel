@@ -1,0 +1,63 @@
+load("@bazel_lib//:bzl_library.bzl", "bzl_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//fortran:__subpackages__"])
+
+cc_binary(
+    name = "merge_modules",
+    srcs = ["merge_modules.cc"],
+)
+
+bzl_library(
+    name = "attrs",
+    srcs = ["attrs.bzl"],
+    # keep: rules_cc groups its public CcInfo and cc_common loads.
+    deps = ["@rules_cc//cc/common"],
+)
+
+bzl_library(
+    name = "compile",
+    srcs = ["compile.bzl"],
+    # keep: rules_cc groups its public CcInfo and cc_common loads.
+    deps = [
+        ":flang",
+        ":modules",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
+    name = "executable",
+    srcs = ["executable.bzl"],
+    deps = [
+        ":compile",
+        ":link",
+        ":runfiles",
+    ],
+)
+
+bzl_library(
+    name = "link",
+    srcs = ["link.bzl"],
+    # keep: rules_cc uses different library names from the loaded files.
+    deps = [
+        "@rules_cc//cc:find_cc_toolchain_bzl",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
+    name = "modules",
+    srcs = ["modules.bzl"],
+    deps = ["//fortran/common:fortran_info"],
+)
+
+bzl_library(
+    name = "flang",
+    srcs = ["flang.bzl"],
+)
+
+bzl_library(
+    name = "runfiles",
+    srcs = ["runfiles.bzl"],
+)

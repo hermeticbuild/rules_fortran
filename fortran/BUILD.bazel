@@ -1,0 +1,43 @@
+load("@bazel_lib//:bzl_library.bzl", "bzl_library")
+
+# gazelle:map_kind bzl_library bzl_library @bazel_lib//:bzl_library.bzl
+
+package(default_visibility = ["//visibility:public"])
+
+toolchain_type(name = "toolchain_type")
+
+bzl_library(
+    name = "fortran_binary",
+    srcs = ["fortran_binary.bzl"],
+    # keep: rules_cc uses a different library name from the loaded file.
+    deps = [
+        "//fortran/private:attrs",
+        "//fortran/private:executable",
+        "@rules_cc//cc:find_cc_toolchain_bzl",
+    ],
+)
+
+bzl_library(
+    name = "fortran_library",
+    srcs = ["fortran_library.bzl"],
+    # keep: rules_cc uses a different library name from the loaded file.
+    deps = [
+        "//fortran/private:attrs",
+        "//fortran/private:compile",
+        "//fortran/private:link",
+        "//fortran/private:modules",
+        "//fortran/private:runfiles",
+        "@rules_cc//cc:find_cc_toolchain_bzl",
+    ],
+)
+
+# keep: Gazelle excludes _test.bzl files, but this file defines a public rule.
+bzl_library(
+    name = "fortran_test",
+    srcs = ["fortran_test.bzl"],
+    deps = [
+        "//fortran/private:attrs",
+        "//fortran/private:executable",
+        "@rules_cc//cc:find_cc_toolchain_bzl",
+    ],
+)

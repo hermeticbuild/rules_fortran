@@ -1,0 +1,12 @@
+filegroup(
+    name = "api",
+    testonly = True,
+    srcs = [
+        "//fortran:fortran_binary.docs-as-proto",
+        "//fortran:fortran_library.docs-as-proto",
+        "//fortran:fortran_test.docs-as-proto",
+        "//fortran/common:fortran_info.docs-as-proto",
+        "//fortran/toolchains:fortran_toolchain.docs-as-proto",
+        "//fortran/toolchains:fortran_toolchain_info.docs-as-proto",
+    ],
+)

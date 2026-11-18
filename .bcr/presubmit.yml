@@ -1,0 +1,7 @@
+bcr_test_module:
+  module_path: tests/integration
+  tasks:
+    linux_amd64:
+      platform: ubuntu2404
+      bazel: '9.x'
+      test_targets: ['//:chain_test', '//:c_main_test']

@@ -1,0 +1,67 @@
+module(
+    name = "rules_fortran_integration",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "llvm", version = "0.8.27")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.25")
+bazel_dep(name = "rules_fortran", version = "0.1.0")
+
+# Pin the merged Flang integration until it is available in a module release.
+archive_override(
+    module_name = "llvm",
+    integrity = "sha256-zNZTSmBqcpp8ZyCAGPx/isIo13grecZzU1aXCkZnyN0=",
+    strip_prefix = "hermetic-llvm-d316387adbe84b7754ef183c366396bda120962e",
+    urls = ["https://github.com/hermeticbuild/hermetic-llvm/archive/d316387adbe84b7754ef183c366396bda120962e.tar.gz"],
+)
+
+local_path_override(
+    module_name = "rules_fortran",
+    path = "../..",
+)
+
+llvm_toolchains = use_extension("@llvm//extensions:toolchain.bzl", "toolchain")
+use_repo(llvm_toolchains, "llvm_toolchains")
+
+register_toolchains("@llvm_toolchains//:all")
+
+register_toolchains("//toolchains:all")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+REFERENCE_LAPACK_URL = "https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.12.1.tar.gz"
+
+REFERENCE_LAPACK_SHA256 = "2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422"
+
+http_archive(
+    name = "blas",
+    build_file = "//netlib:blas.BUILD",
+    dev_dependency = True,
+    patch_args = ["-p1"],
+    patches = ["//netlib:dblat1-exit-code.patch"],
+    sha256 = REFERENCE_LAPACK_SHA256,
+    strip_prefix = "lapack-3.12.1/BLAS",
+    urls = [REFERENCE_LAPACK_URL],
+)
+
+http_archive(
+    name = "lapack",
+    build_file = "//netlib:lapack.BUILD",
+    dev_dependency = True,
+    sha256 = REFERENCE_LAPACK_SHA256,
+    strip_prefix = "lapack-3.12.1",
+    urls = [REFERENCE_LAPACK_URL],
+)
+
+http_archive(
+    name = "lapacke",
+    build_file = "//netlib:lapacke.BUILD",
+    dev_dependency = True,
+    patch_args = ["-p2"],
+    patches = ["//netlib:lapacke-msvc-complex.patch"],
+    sha256 = REFERENCE_LAPACK_SHA256,
+    strip_prefix = "lapack-3.12.1/LAPACKE",
+    urls = [REFERENCE_LAPACK_URL],
+)

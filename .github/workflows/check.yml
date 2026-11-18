@@ -1,0 +1,23 @@
+name: Release checks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
+        with:
+          bazelisk-version: '1.30.0'
+      - name: Check Starlark library declarations
+        run: bazel run //tools/gazelle:check --lockfile_mode=off
+      - name: Check release archives and test the extracted consumer
+        run: bash .github/workflows/check_archive.sh

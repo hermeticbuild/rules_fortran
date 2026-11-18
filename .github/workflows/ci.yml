@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, cerisier/flang-path]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  flang:
+    name: Flang on ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            flang: linux-amd64
+            os: linux
+            cpu: x86_64
+          - runner: ubuntu-24.04-arm
+            flang: linux-arm64
+            os: linux
+            cpu: aarch64
+          - runner: macos-26-intel
+            flang: darwin-amd64
+            os: macos
+            cpu: x86_64
+          - runner: macos-26
+            flang: darwin-arm64
+            os: macos
+            cpu: aarch64
+          - runner: windows-latest
+            flang: windows-amd64
+            os: windows
+            cpu: x86_64
+          - runner: windows-11-arm
+            flang: windows-arm64
+            os: windows
+            cpu: aarch64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Build and run native tests
+        working-directory: tests/integration
+        shell: bash
+        env:
+          FLANG_ARCHIVE: ${{ matrix.flang }}
+          NATIVE_OS: ${{ matrix.os }}
+          NATIVE_CPU: ${{ matrix.cpu }}
+        run: bash ci.sh
+      - name: Verify expected build failures
+        if: matrix.runner == 'ubuntu-24.04'
+        working-directory: tests/integration
+        run: bash check_failures.sh
+
+  linux-consumer:
+    name: Netlib BLAS on Linux x86_64
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Run the Netlib double-precision Level 1 tests
+        working-directory: tests/integration
+        run: bazelisk --nosystem_rc --nohome_rc test --experimental_output_paths=strip @blas//:dblat1
