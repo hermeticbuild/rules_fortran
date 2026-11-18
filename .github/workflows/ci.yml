@@ -52,3 +52,12 @@ jobs:
           NATIVE_OS: ${{ matrix.os }}
           NATIVE_CPU: ${{ matrix.cpu }}
         run: bash ci.sh
+
+  linux-consumer:
+    name: Netlib BLAS on Linux x86_64
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Run the Netlib double-precision Level 1 tests
+        working-directory: tests/integration
+        run: bazelisk --nosystem_rc --nohome_rc test --experimental_output_paths=strip @blas//:dblat1

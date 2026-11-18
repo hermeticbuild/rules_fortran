@@ -39,6 +39,8 @@ http_archive(
     name = "blas",
     build_file = "//netlib:blas.BUILD",
     dev_dependency = True,
+    patch_args = ["-p1"],
+    patches = ["//netlib:dblat1-exit-code.patch"],
     sha256 = REFERENCE_LAPACK_SHA256,
     strip_prefix = "lapack-3.12.1/BLAS",
     urls = [REFERENCE_LAPACK_URL],

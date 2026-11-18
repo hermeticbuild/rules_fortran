@@ -1,5 +1,6 @@
 exports_files([
     "blas.BUILD",
+    "dblat1-exit-code.patch",
     "lapack.BUILD",
     "lapacke-msvc-complex.patch",
     "lapacke.BUILD",

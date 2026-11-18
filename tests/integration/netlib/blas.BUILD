@@ -4,6 +4,7 @@
 """Reference BLAS libraries by precision."""
 
 load("@rules_fortran//fortran:fortran_library.bzl", "fortran_library")
+load("@rules_fortran//fortran:fortran_test.bzl", "fortran_test")
 
 # Auxiliary BLAS routines (required by all precisions)
 ALLBLAS_SRCS = [
@@ -275,4 +276,12 @@ fortran_library(
         ":double",
         ":single",
     ],
+)
+
+fortran_test(
+    name = "dblat1",
+    size = "small",
+    srcs = ["TESTING/dblat1.f"],
+    copts = BLAS_COPTS,
+    deps = ["double"],
 )
