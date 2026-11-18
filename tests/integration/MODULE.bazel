@@ -28,3 +28,38 @@ use_repo(llvm_toolchains, "llvm_toolchains")
 register_toolchains("@llvm_toolchains//:all")
 
 register_toolchains("//toolchains:all")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+REFERENCE_LAPACK_URL = "https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.12.1.tar.gz"
+
+REFERENCE_LAPACK_SHA256 = "2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422"
+
+http_archive(
+    name = "blas",
+    build_file = "//netlib:blas.BUILD",
+    dev_dependency = True,
+    sha256 = REFERENCE_LAPACK_SHA256,
+    strip_prefix = "lapack-3.12.1/BLAS",
+    urls = [REFERENCE_LAPACK_URL],
+)
+
+http_archive(
+    name = "lapack",
+    build_file = "//netlib:lapack.BUILD",
+    dev_dependency = True,
+    sha256 = REFERENCE_LAPACK_SHA256,
+    strip_prefix = "lapack-3.12.1",
+    urls = [REFERENCE_LAPACK_URL],
+)
+
+http_archive(
+    name = "lapacke",
+    build_file = "//netlib:lapacke.BUILD",
+    dev_dependency = True,
+    patch_args = ["-p2"],
+    patches = ["//netlib:lapacke-msvc-complex.patch"],
+    sha256 = REFERENCE_LAPACK_SHA256,
+    strip_prefix = "lapack-3.12.1/LAPACKE",
+    urls = [REFERENCE_LAPACK_URL],
+)

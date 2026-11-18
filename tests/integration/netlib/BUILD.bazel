@@ -1,0 +1,6 @@
+exports_files([
+    "blas.BUILD",
+    "lapack.BUILD",
+    "lapacke-msvc-complex.patch",
+    "lapacke.BUILD",
+])
