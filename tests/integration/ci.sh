@@ -54,6 +54,7 @@ while read -r platform os cpu triple format driver; do
   grep -Fx "Arch: $cpu" <<<"$headers"
 
   if [[ "$os" == "${NATIVE_OS:-}" && "$cpu" == "${NATIVE_CPU:-}" ]]; then
+    flags+=("--extra_toolchains=//toolchains/native_test:${os}_${cpu}")
     if [[ "$os" == windows ]]; then
       flags+=(--enable_runfiles)
     fi

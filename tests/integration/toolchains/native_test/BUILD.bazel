@@ -1,0 +1,26 @@
+# Native tests need the runner's OS and CPU. The libc or Windows ABI of the
+# build tools does not determine which binaries the runner can execute.
+[
+    toolchain(
+        name = "{}_{}".format(os, cpu),
+        exec_compatible_with = [
+            "@platforms//os:" + os,
+            "@platforms//cpu:" + cpu,
+        ],
+        target_compatible_with = [
+            "@platforms//os:" + os,
+            "@platforms//cpu:" + cpu,
+        ],
+        toolchain = "@bazel_tools//tools/test:empty_toolchain",
+        toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
+    )
+    for os in [
+        "linux",
+        "macos",
+        "windows",
+    ]
+    for cpu in [
+        "x86_64",
+        "aarch64",
+    ]
+]
