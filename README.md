@@ -7,7 +7,7 @@ link against Fortran libraries through ordinary Bazel dependencies.
 ## Quickstart
 
 Install [Bazelisk](https://github.com/bazelbuild/bazelisk), then try the
-included examples on Linux x86_64 or macOS Arm64.
+included examples on Linux x86_64 with glibc or on macOS Arm64.
 
 ```sh
 git clone https://github.com/hermeticbuild/rules_fortran.git
@@ -76,8 +76,9 @@ The [interop example](tests/integration/BUILD.bazel) links
 
 ## Platforms
 
-Flang works on x86_64 and Arm64 for Linux (glibc and musl), macOS, and
-Windows (MinGW and MSVC). GNU Fortran and shared libraries are planned.
+The Flang integration can target x86_64 and Arm64 for Linux (glibc and
+musl), macOS, and Windows (MinGW and MSVC). GNU Fortran and shared
+libraries are planned.
 
 ## License
 

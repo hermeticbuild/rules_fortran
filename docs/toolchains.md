@@ -2,7 +2,7 @@
 
 ## Set up a Bzlmod consumer
 
-This example uses Linux x86_64 or macOS Arm64. Clone
+This example uses Linux x86_64 with glibc or macOS Arm64. Clone
 [`rules_fortran`](https://github.com/hermeticbuild/rules_fortran) next to your
 project and copy its [`.bazelversion`](../.bazelversion) into your project.
 
