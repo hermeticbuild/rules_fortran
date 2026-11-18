@@ -52,6 +52,10 @@ jobs:
           NATIVE_OS: ${{ matrix.os }}
           NATIVE_CPU: ${{ matrix.cpu }}
         run: bash ci.sh
+      - name: Verify expected build failures
+        if: matrix.runner == 'ubuntu-24.04'
+        working-directory: tests/integration
+        run: bash check_failures.sh
 
   linux-consumer:
     name: Netlib BLAS on Linux x86_64

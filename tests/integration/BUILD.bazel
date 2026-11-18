@@ -4,6 +4,7 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_fortran//fortran:fortran_binary.bzl", "fortran_binary")
 load("@rules_fortran//fortran:fortran_library.bzl", "fortran_library")
 load("@rules_fortran//fortran:fortran_test.bzl", "fortran_test")
+load(":merged_module_directory_test.bzl", "merged_module_directory_test")
 
 platform(
     name = "linux_x86_64_musl_remote",
@@ -103,6 +104,12 @@ fortran_test(
     srcs = ["chain_main.f90"],
     features = LINK_FEATURES,
     deps = [":multi_source"],
+)
+
+merged_module_directory_test(
+    name = "multi_source_module_directory_test",
+    size = "small",
+    target_under_test = "multi_source",
 )
 
 fortran_library(
@@ -281,6 +288,15 @@ fortran_test(
         config: ["/DEF:exports.def"]
         for config in WINDOWS_MSVC
     }),
+)
+
+fortran_library(
+    name = "duplicate_module",
+    srcs = [
+        "base.f90",
+        "duplicate_base.f90",
+    ],
+    tags = ["manual"],
 )
 
 fortran_test(
