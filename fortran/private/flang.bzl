@@ -1,6 +1,6 @@
 """Flang compilation options from the selected Fortran toolchain."""
 
-def add_compile_arguments(args, ctx, src, obj, module_dir, intrinsic_modules, target_flags, dep_module_dirs, propagated_defines):
+def add_compile_arguments(args, ctx, src, obj, module_dir, intrinsic_modules, target_flags, dep_module_dirs, propagated_defines, pic):
     """Add Flang target, module, and source options to an action Args.
 
     Args:
@@ -13,9 +13,11 @@ def add_compile_arguments(args, ctx, src, obj, module_dir, intrinsic_modules, ta
         target_flags: Compiler target flags selected by the toolchain.
         dep_module_dirs: Lazy depset of dependency module trees.
         propagated_defines: Lazy depset of propagated definitions.
+        pic: Whether to request position-independent code.
     """
     args.add_all(target_flags)
-    args.add("-fPIC")
+    if pic:
+        args.add("-fPIC")
     compilation_mode = ctx.var["COMPILATION_MODE"]
     if compilation_mode == "dbg":
         args.add_all(["-O0", "-g"])

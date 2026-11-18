@@ -1,7 +1,7 @@
 """Shared implementation of Fortran binaries and Bazel tests."""
 
 load(":compile.bzl", "compile_sources")
-load(":link.bzl", "executable_link")
+load(":link.bzl", "executable_link", "find_cc_toolchain")
 load(":runfiles.bzl", "rule_runfiles")
 
 def fortran_executable_impl(ctx):
@@ -16,8 +16,9 @@ def fortran_executable_impl(ctx):
     if not ctx.files.srcs:
         fail("Fortran binary/test requires at least one source")
     toolchain = ctx.toolchains["//fortran:toolchain_type"].fortran
-    compiled = compile_sources(ctx, toolchain)
-    executable = executable_link(ctx, compiled.compilation_outputs, toolchain)
+    cc_toolchain, features = find_cc_toolchain(ctx)
+    compiled = compile_sources(ctx, toolchain, features)
+    executable = executable_link(ctx, compiled.compilation_outputs, toolchain, cc_toolchain, features)
     return [DefaultInfo(
         executable = executable,
         files = depset([executable]),

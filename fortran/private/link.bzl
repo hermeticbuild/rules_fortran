@@ -15,20 +15,21 @@ def find_cc_toolchain(ctx):
     )
     return cc_toolchain, feature_configuration
 
-def library_link(ctx, compilation_outputs, toolchain):
+def library_link(ctx, compilation_outputs, toolchain, cc_toolchain, feature_configuration):
     """Build an archive or merge the linking closure of an empty library.
 
     Args:
         ctx: Rule analysis context.
-        compilation_outputs: PIC object compilation outputs.
+        compilation_outputs: Native object compilation outputs.
         toolchain: Resolved FortranToolchainInfo.
+        cc_toolchain: Resolved CC toolchain.
+        feature_configuration: Selected CC toolchain features.
 
     Returns:
         A pair of CcInfo and default output files.
     """
     dep_cc_infos = [dep[CcInfo] for dep in ctx.attr.deps]
     if ctx.files.srcs:
-        cc_toolchain, feature_configuration = find_cc_toolchain(ctx)
         linking_context, linking_outputs = cc_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             name = ctx.label.name,
@@ -56,23 +57,22 @@ def library_link(ctx, compilation_outputs, toolchain):
     merged = cc_common.merge_cc_infos(cc_infos = [CcInfo(linking_context = own_context)] + dep_cc_infos)
     return merged, []
 
-def executable_link(ctx, compilation_outputs, toolchain):
+def executable_link(ctx, compilation_outputs, toolchain, cc_toolchain, feature_configuration):
     """Link Fortran objects and CcInfo dependencies with the CC toolchain.
 
     Args:
         ctx: Rule analysis context.
-        compilation_outputs: PIC object compilation outputs.
+        compilation_outputs: Native object compilation outputs.
         toolchain: Resolved FortranToolchainInfo.
+        cc_toolchain: Resolved CC toolchain.
+        feature_configuration: Selected CC toolchain features.
 
     Returns:
         The declared executable File.
     """
-    cc_toolchain, feature_configuration = find_cc_toolchain(ctx)
-    output = ctx.actions.declare_file(ctx.label.name)
-    cc_common.link(
+    outputs = cc_common.link(
         actions = ctx.actions,
         name = ctx.label.name,
-        main_output = output,
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         output_type = "executable",
@@ -82,4 +82,4 @@ def executable_link(ctx, compilation_outputs, toolchain):
         user_link_flags = ctx.attr.linkopts,
         additional_inputs = ctx.files.additional_linker_inputs,
     )
-    return output
+    return outputs.executable

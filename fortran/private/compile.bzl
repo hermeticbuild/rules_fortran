@@ -46,12 +46,13 @@ def _check_options(ctx):
             if option.startswith(prefix):
                 fail("Fortran compilation does not support '{}' yet".format(prefix))
 
-def compile_sources(ctx, toolchain, export_modules = False):
-    """Compile each source to a PIC object and module-output tree.
+def compile_sources(ctx, toolchain, feature_configuration, export_modules = False):
+    """Compile each source to a native object and module-output tree.
 
     Args:
         ctx: Rule analysis context.
         toolchain: Resolved FortranToolchainInfo.
+        feature_configuration: Selected CC toolchain features.
         export_modules: Merge module outputs for a library's dependents.
 
     Returns:
@@ -60,6 +61,7 @@ def compile_sources(ctx, toolchain, export_modules = False):
     if toolchain.compiler_kind != "flang":
         fail("Compiler adapter '{}' is not implemented yet".format(toolchain.compiler_kind))
     _check_options(ctx)
+    pic = cc_common.is_enabled(feature_configuration = feature_configuration, feature_name = "supports_pic")
 
     dep_module_dirs = dependency_modules(ctx.attr.deps)
     defines = propagated_defines(ctx.attr.deps)
@@ -70,7 +72,7 @@ def compile_sources(ctx, toolchain, export_modules = False):
         obj = ctx.actions.declare_file("{}_objects/{}.o".format(ctx.label.name, index))
         module_dir = ctx.actions.declare_directory("{}_modules/{}".format(ctx.label.name, index))
         args = ctx.actions.args()
-        add_compile_arguments(args, ctx, src, obj, module_dir, toolchain.intrinsic_modules, toolchain.target_flags, dep_module_dirs, defines)
+        add_compile_arguments(args, ctx, src, obj, module_dir, toolchain.intrinsic_modules, toolchain.target_flags, dep_module_dirs, defines, pic)
         inputs = depset(
             direct = [toolchain.intrinsic_modules, src] + ctx.files.additional_compiler_inputs,
             transitive = [dep_module_dirs],
@@ -109,7 +111,7 @@ def compile_sources(ctx, toolchain, export_modules = False):
 
     outputs = cc_common.create_compilation_outputs(
         objects = depset(objects),
-        pic_objects = depset(objects),
+        pic_objects = depset(objects if pic else []),
     )
     return struct(compilation_outputs = outputs, objects = objects, module_dirs = module_dirs)
 

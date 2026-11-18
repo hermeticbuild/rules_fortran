@@ -3,14 +3,15 @@
 load("@rules_cc//cc:find_cc_toolchain.bzl", "use_cc_toolchain")
 load("//fortran/private:attrs.bzl", "COMMON_ATTRS")
 load("//fortran/private:compile.bzl", "compile_sources")
-load("//fortran/private:link.bzl", "library_link")
+load("//fortran/private:link.bzl", "find_cc_toolchain", "library_link")
 load("//fortran/private:modules.bzl", "fortran_info")
 load("//fortran/private:runfiles.bzl", "rule_runfiles")
 
 def _fortran_library_impl(ctx):
     toolchain = ctx.toolchains["//fortran:toolchain_type"].fortran
-    compiled = compile_sources(ctx, toolchain, export_modules = True)
-    cc_info, archives = library_link(ctx, compiled.compilation_outputs, toolchain)
+    cc_toolchain, features = find_cc_toolchain(ctx)
+    compiled = compile_sources(ctx, toolchain, features, export_modules = True)
+    cc_info, archives = library_link(ctx, compiled.compilation_outputs, toolchain, cc_toolchain, features)
     return [
         DefaultInfo(
             files = depset(archives + compiled.module_dirs),
