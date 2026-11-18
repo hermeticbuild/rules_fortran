@@ -14,7 +14,7 @@ dependencies and the LLVM archive override from the
 module(name = "fortran_example")
 
 # Copy the llvm and platforms dependencies and the LLVM archive override here.
-bazel_dep(name = "rules_fortran", version = "0.0.0")
+bazel_dep(name = "rules_fortran")
 
 local_path_override(
     module_name = "rules_fortran",
@@ -28,6 +28,9 @@ register_toolchains("@llvm_toolchains//:all")
 
 register_toolchains("//toolchains:all")
 ```
+
+For a BCR release, give the `rules_fortran` dependency its released version
+and omit its `local_path_override`.
 
 Add this to your `.bazelrc`. It enables the source files used to build the
 target intrinsic modules and Flang runtime, and disables local C/C++

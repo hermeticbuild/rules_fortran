@@ -1,0 +1,23 @@
+load("@gazelle//:def.bzl", "gazelle", "gazelle_binary")
+
+gazelle_binary(
+    name = "gazelle",
+    languages = ["@bazel_skylib_gazelle_plugin//bzl"],
+    pure = "on",
+    tags = ["manual"],
+)
+
+gazelle(
+    name = "update",
+    args = ["fortran"],
+    gazelle = "gazelle",
+    tags = ["manual"],
+)
+
+gazelle(
+    name = "check",
+    args = ["fortran"],
+    gazelle = "gazelle",
+    mode = "diff",
+    tags = ["manual"],
+)

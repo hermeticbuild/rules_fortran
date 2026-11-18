@@ -1,1 +1,10 @@
+load("@bazel_lib//:bzl_library.bzl", "bzl_library")
+
+package(default_visibility = ["//visibility:public"])
+
 exports_files(["fortran_info.bzl"])
+
+bzl_library(
+    name = "fortran_info",
+    srcs = ["fortran_info.bzl"],
+)
