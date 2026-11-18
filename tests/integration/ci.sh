@@ -19,10 +19,12 @@ while read -r platform os cpu triple format driver; do
   fi
   matched=1
   echo "=== $FLANG_ARCHIVE -> $platform ==="
-  flags=(
-    "--platforms=@llvm//platforms:$platform"
-    --experimental_output_paths=strip
-  )
+  flags=("--platforms=@llvm//platforms:$platform")
+  if [[ "${RUNNER_OS:-}" != Windows ]]; then
+    # Bazel needs sandboxing for mapped MinGW actions. Windows runners
+    # execute these actions locally.
+    flags+=(--experimental_output_paths=strip)
+  fi
   if [[ "${NATIVE_OS:-}" == linux ]]; then
     # Build the module merge tool for the local CPU with static musl.
     flags+=("--host_platform=@llvm//platforms:linux_${NATIVE_CPU}_musl")
