@@ -1,29 +1,68 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_fortran//fortran/toolchains:fortran_toolchain.bzl", "fortran_toolchain")
+
+TARGET_TRIPLES = {
+    "linux_x86_64_musl": "x86_64-linux-musl",
+    "linux_aarch64_musl": "aarch64-linux-musl",
+    "linux_riscv64_musl": "riscv64-linux-musl",
+    "linux_x86_64_gnu": "x86_64-linux-gnu",
+    "linux_aarch64_gnu": "aarch64-linux-gnu",
+    "linux_riscv64_gnu": "riscv64-linux-gnu",
+    "macos_x86_64": "x86_64-apple-darwin",
+    "macos_aarch64": "aarch64-apple-darwin",
+    "windows_x86_64_gnu": "x86_64-w64-windows-gnu",
+    "windows_aarch64_gnu": "aarch64-w64-windows-gnu",
+    "windows_x86_64_msvc": "x86_64-pc-windows-msvc",
+    "windows_aarch64_msvc": "aarch64-pc-windows-msvc",
+}
+
+# The GNU aliases group several libc constraints for select(). Toolchain
+# registration uses each default platform's concrete config_setting.
+DEFAULT_GLIBC_CONFIGS = {
+    "linux_aarch64_gnu": "linux_aarch64_gnu.2.28",
+    "linux_riscv64_gnu": "linux_riscv64_gnu.2.33",
+    "linux_x86_64_gnu": "linux_x86_64_gnu.2.28",
+}
+
+# Match the deployment target and CRT used by the selected C/C++ toolchain.
+EXTRA_TARGET_FLAGS = {
+    "macos_aarch64": ["-mmacosx-version-min=14.0"],
+    "macos_x86_64": ["-mmacosx-version-min=14.0"],
+    "windows_aarch64_msvc": ["-fms-runtime-lib=dll"],
+    "windows_x86_64_msvc": ["-fms-runtime-lib=dll"],
+}
+
+cc_library(
+    name = "runtime",
+    # Flang emits a COFF directive naming its upstream runtime archive.
+    # The matching library is already supplied explicitly through CcInfo.
+    linkopts = select({
+        "@llvm//constraints/windows/abi:msvc": ["/NODEFAULTLIB:flang_rt.runtime.dynamic.lib"],
+        "//conditions:default": [],
+    }),
+    deps = ["@llvm//runtimes/flang:runtime"],
+)
 
 fortran_toolchain(
     name = "flang",
     compiler = "@llvm//tools:flang",
     compiler_kind = "flang",
     intrinsic_modules = "@llvm//runtimes/flang:intrinsic_modules",
-    runtime = "@llvm//runtimes/flang:runtime",
+    runtime = ":runtime",
     target_flags = select({
-        "@llvm//platforms/config:linux_aarch64_musl": ["--target=aarch64-linux-musl"],
-        "@llvm//platforms/config:linux_x86_64_musl": ["--target=x86_64-linux-musl"],
+        "@llvm//platforms/config:" + target: ["--target=" + triple] + EXTRA_TARGET_FLAGS.get(target, [])
+        for target, triple in TARGET_TRIPLES.items()
     }),
 )
 
 [
     toolchain(
-        name = "flang_{}_{}_to_linux_{}_musl".format(os, cpu, target_cpu),
+        name = "flang_{}_{}_to_{}".format(os, cpu, target),
         exec_compatible_with = [
             "@platforms//os:" + os,
             "@platforms//cpu:" + cpu,
         ],
-        target_compatible_with = [
-            "@platforms//os:linux",
-            "@platforms//cpu:" + target_cpu,
-            "@llvm//constraints/libc:musl",
-        ],
+        target_settings = ["@llvm//platforms/config:" + DEFAULT_GLIBC_CONFIGS.get(target, target)],
         toolchain = ":flang",
         toolchain_type = "@rules_fortran//fortran:toolchain_type",
     )
@@ -36,8 +75,5 @@ fortran_toolchain(
         "x86_64",
         "aarch64",
     ]
-    for target_cpu in [
-        "x86_64",
-        "aarch64",
-    ]
+    for target in TARGET_TRIPLES
 ]

@@ -2,8 +2,8 @@
 
 Fortran rules that use a registered compiler for compilation and Bazel's selected
 C/C++ toolchain for native archives and final links. The integration module
-uses the published Flang compiler to build Linux musl executables for x86_64
-and Arm64. GNU Fortran is planned in a later gate.
+uses the published Flang compiler to build Linux, macOS, and Windows programs.
+GNU Fortran is planned in a later gate.
 
 The [gate 4 evidence](docs/gate-4-evidence.md) records the qualified source
 build, action inspection, and remaining limits.
@@ -26,7 +26,8 @@ C++ rule can depend on a `fortran_library` through an ordinary `cc_library`
 wrapper that declares the C header for any `bind(C)` procedures. The ruleset
 does not generate C headers.
 
-Each source has its own PIC object and module-output tree. A library merges its
+Each source has its own native object and module-output tree. The C/C++
+toolchain determines whether the compile uses PIC. A library merges its
 source module files into one declared tree for dependents. A source using a
 module from another source needs a `deps` edge to that source's target, so the
 merged tree is a declared compile input. Independent sources may share a
@@ -84,11 +85,18 @@ intrinsic modules and Flang-RT from matching sources.
 
 ## Integration CI
 
-Each Linux, macOS, and Windows runner builds the integration suite for both
-Linux x86_64 musl and Linux Arm64 musl. The Linux runners also execute the
-tests for their own CPU. CI checks the selected Flang archive, compiler
-target flag, Hermetic LLVM linker inputs, and ELF architecture of a linked
-module consumer. Builds run locally on each runner.
+The six x86_64 and Arm64 runners each build the same module consumer for
+these 12 targets:
+
+- Linux x86_64, Arm64, and RISC-V with musl and the default glibc.
+- macOS x86_64 and Arm64.
+- Windows x86_64 and Arm64 with MinGW and MSVC.
+
+Each runner checks the selected Flang archive, target flag, Hermetic LLVM
+link inputs, and executable format and architecture. It also runs the
+integration suite for configurations that match its OS and CPU. The linker
+input test uses the target linker's native file format. Builds run locally
+on each runner.
 
 From `tests/integration`, run a cross build with the pinned Bazel version:
 
@@ -101,12 +109,18 @@ On an Arm64 Linux host, add
 merge tool with static musl. Use `test` in place of `build` to run the matching
 target. On x86_64 Linux, use `linux_x86_64_musl` for the host platform.
 
+To reproduce the CI checks for a single target from an Arm64 Mac:
+
+```sh
+FLANG_ARCHIVE=darwin-arm64 NATIVE_OS=macos NATIVE_CPU=aarch64 \
+  TARGET_FILTER=macos_aarch64 bash ci.sh
+```
+
 ## Current boundaries
 
-- The integration suite covers static archives and executables targeting
-  Linux musl. Other target ABIs require their own qualification.
-- Libraries compile PIC objects only. Separate PIC and non-PIC outputs remain
-  a later design decision.
+- Libraries build one object per source. Toolchains with PIC support
+  compile their objects with PIC. Separate PIC and non-PIC outputs remain a
+  later design decision.
 - Cross-target module-name collision and arbitrary compiler/module-format
   mismatch checks are deferred. The source graph must express inter-target
   module use. Duplicate module filenames within one library fail at merge.

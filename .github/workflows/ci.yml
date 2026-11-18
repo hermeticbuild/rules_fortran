@@ -18,25 +18,36 @@ jobs:
         include:
           - runner: ubuntu-24.04
             flang: linux-amd64
-            native_linux_cpu: x86_64
+            os: linux
+            cpu: x86_64
           - runner: ubuntu-24.04-arm
             flang: linux-arm64
-            native_linux_cpu: aarch64
+            os: linux
+            cpu: aarch64
           - runner: macos-26-intel
             flang: darwin-amd64
+            os: macos
+            cpu: x86_64
           - runner: macos-26
             flang: darwin-arm64
+            os: macos
+            cpu: aarch64
           - runner: windows-latest
             flang: windows-amd64
+            os: windows
+            cpu: x86_64
           - runner: windows-11-arm
             flang: windows-arm64
+            os: windows
+            cpu: aarch64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - name: Build and test Linux targets
+      - name: Cross build and run matching tests
         working-directory: tests/integration
         shell: bash
         env:
           FLANG_ARCHIVE: ${{ matrix.flang }}
-          NATIVE_LINUX_CPU: ${{ matrix.native_linux_cpu }}
+          NATIVE_OS: ${{ matrix.os }}
+          NATIVE_CPU: ${{ matrix.cpu }}
         run: bash ci.sh
