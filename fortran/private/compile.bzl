@@ -92,7 +92,7 @@ def compile_sources(ctx, toolchain, export_modules = False):
         merged_dir = ctx.actions.declare_directory("{}_merged_modules".format(ctx.label.name))
         merge_args = ctx.actions.args()
         merge_args.add_all([merged_dir], expand_directories = False)
-        merge_args.add_all(module_dirs, expand_directories = False)
+        merge_args.add_all(module_dirs, map_each = _module_path)
         merge_args.use_param_file("@%s", use_always = True)
         merge_args.set_param_file_format("multiline")
         merger = ctx.attr._merge_modules[DefaultInfo].files_to_run
@@ -112,3 +112,8 @@ def compile_sources(ctx, toolchain, export_modules = False):
         pic_objects = depset(objects),
     )
     return struct(compilation_outputs = outputs, objects = objects, module_dirs = module_dirs)
+
+def _module_path(file):
+    if "/" in file.tree_relative_path:
+        fail("Unexpected nested file in Fortran module output: {}".format(file.path))
+    return file.path
