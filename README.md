@@ -85,18 +85,14 @@ intrinsic modules and Flang-RT from matching sources.
 
 ## Integration CI
 
-The six x86_64 and Arm64 runners each build the same module consumer for
-these 12 targets:
+Each of the six x86_64 and Arm64 runners builds and runs the integration
+suite for its own OS and CPU. Linux jobs cover musl and glibc. Windows jobs
+cover MinGW and MSVC. Each job checks the selected Flang archive, target
+flag, Hermetic LLVM link inputs, and executable format and architecture.
+All native CI actions run locally on the runner.
 
-- Linux x86_64, Arm64, and RISC-V with musl and the default glibc.
-- macOS x86_64 and Arm64.
-- Windows x86_64 and Arm64 with MinGW and MSVC.
-
-Each runner checks the selected Flang archive, target flag, Hermetic LLVM
-link inputs, and executable format and architecture. It also runs the
-integration suite for configurations that match its OS and CPU. The linker
-input test uses the target linker's native file format. Builds run locally
-on each runner.
+The integration also supports explicit cross build probes. A separate
+BuildBuddy lane is planned for cross builds using Linux executors.
 
 From `tests/integration`, run a cross build with the pinned Bazel version:
 

@@ -14,7 +14,9 @@ output_base=$("${bazel[@]}" info output_base | tr -d '\r')
 
 matched=0
 while read -r platform os cpu triple format driver; do
-  if [[ -n "${TARGET_FILTER:-}" && "$platform" != "$TARGET_FILTER" ]]; then
+  if [[ -n "${TARGET_FILTER:-}" ]]; then
+    [[ "$platform" == "$TARGET_FILTER" ]] || continue
+  elif [[ "$os" != "${NATIVE_OS:-}" || "$cpu" != "${NATIVE_CPU:-}" ]]; then
     continue
   fi
   matched=1
@@ -32,7 +34,15 @@ while read -r platform os cpu triple format driver; do
   if [[ "$driver" == clang-cl ]]; then
     flags+=(--repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1 --repo_env=BAZEL_WINDOWS_SDK_EULA=1)
   fi
-  "${bazel[@]}" build "${flags[@]}" //:chain_binary
+  if [[ "$os" == "${NATIVE_OS:-}" && "$cpu" == "${NATIVE_CPU:-}" ]]; then
+    flags+=("--extra_toolchains=//toolchains/native_test:${os}_${cpu}")
+    if [[ "$os" == windows ]]; then
+      flags+=(--enable_runfiles)
+    fi
+    "${bazel[@]}" test "${flags[@]}" //...
+  else
+    "${bazel[@]}" build "${flags[@]}" //:chain_binary
+  fi
 
   # Check the compiler and native link for the same module consumer.
   actions=$("${bazel[@]}" aquery "${flags[@]}" \
@@ -53,13 +63,6 @@ while read -r platform os cpu triple format driver; do
   grep -F "Format: $format" <<<"$headers"
   grep -Fx "Arch: $cpu" <<<"$headers"
 
-  if [[ "$os" == "${NATIVE_OS:-}" && "$cpu" == "${NATIVE_CPU:-}" ]]; then
-    flags+=("--extra_toolchains=//toolchains/native_test:${os}_${cpu}")
-    if [[ "$os" == windows ]]; then
-      flags+=(--enable_runfiles)
-    fi
-    "${bazel[@]}" test "${flags[@]}" //...
-  fi
 done <<'TARGETS'
 linux_x86_64_musl    linux   x86_64  x86_64-linux-musl         elf64-  clang++
 linux_aarch64_musl   linux   aarch64 aarch64-linux-musl        elf64-  clang++
@@ -76,6 +79,6 @@ windows_aarch64_msvc windows aarch64 aarch64-pc-windows-msvc    COFF-   clang-cl
 TARGETS
 
 if [[ "$matched" == 0 ]]; then
-  echo "Unknown qualification target: $TARGET_FILTER" >&2
+  echo "No target for filter '${TARGET_FILTER:-}' and native host '${NATIVE_OS:-}/${NATIVE_CPU:-}'" >&2
   exit 1
 fi

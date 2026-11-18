@@ -43,7 +43,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - name: Cross build and run matching tests
+      - name: Build and run native tests
         working-directory: tests/integration
         shell: bash
         env:

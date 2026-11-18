@@ -152,14 +152,12 @@ jobs and the two Linux test runs still need results from hosted CI.
 
 ## Full target matrix
 
-Each of the six native jobs builds `//:chain_binary` for 12 target
-configurations using its published Flang 23.1.6 executable. This fixture
+The first hosted workflow attempted `//:chain_binary` for 12 target
+configurations on each native runner. This fixture
 consumes an intrinsic module and compiled modules from the diamond
 dependency before linking through the selected C/C++ toolchain.
 `ci.sh` checks the compiler archive, target flags, native link inputs,
-and the resulting format and architecture. Each job also runs the
-full integration suite for its own OS and CPU, including both libc
-configurations on Linux or both ABIs on Windows.
+and the resulting format and architecture.
 
 MinGW selected PIC inputs for the link. When Fortran supplied only
 non-PIC inputs, the link dropped `main` and reported a missing
@@ -177,5 +175,7 @@ architectures, and both Windows ABIs produced PE/COFF for both
 architectures. The matching macOS Arm64 suite passed all 14 tests.
 The full suite also built all 34 targets for Windows x86_64 with each
 ABI from this Mac. Those Windows binaries still need native test runs.
-The ruleset checkout has no GitHub remote, so hosted qualification of
-the other five execution platforms is pending.
+The hosted workflow now builds and runs the full suite for each runner's
+own OS and CPU, including both libc configurations on Linux and both ABI
+configurations on Windows. Cross builds are planned as a separate
+BuildBuddy lane using Linux executors.
