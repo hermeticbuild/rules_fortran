@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flang:
+    name: Flang on ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            flang: linux-amd64
+            native_linux_cpu: x86_64
+          - runner: ubuntu-24.04-arm
+            flang: linux-arm64
+            native_linux_cpu: aarch64
+          - runner: macos-26-intel
+            flang: darwin-amd64
+          - runner: macos-26
+            flang: darwin-arm64
+          - runner: windows-latest
+            flang: windows-amd64
+          - runner: windows-11-arm
+            flang: windows-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Build and test Linux targets
+        working-directory: tests/integration
+        shell: bash
+        env:
+          FLANG_ARCHIVE: ${{ matrix.flang }}
+          NATIVE_LINUX_CPU: ${{ matrix.native_linux_cpu }}
+        run: bash ci.sh

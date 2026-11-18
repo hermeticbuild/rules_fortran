@@ -1,9 +1,9 @@
 # rules_fortran
 
 Fortran rules that use a registered compiler for compilation and Bazel's selected
-C/C++ toolchain for native archives and final links. This repository currently
-implements the Flang path for a Linux x86_64 execution platform and a Linux
-x86_64 musl target. GNU Fortran is planned in a later gate.
+C/C++ toolchain for native archives and final links. The integration module
+uses the published Flang compiler to build Linux musl executables for x86_64
+and Arm64. GNU Fortran is planned in a later gate.
 
 The [gate 4 evidence](docs/gate-4-evidence.md) records the qualified source
 build, action inspection, and remaining limits.
@@ -76,19 +76,35 @@ contains no `@llvm` labels. It does not read a deprecated GNU system-name
 field. Other Flang target pairs require their own qualified compiler, modules,
 runtime, and selected target flags.
 
-The minimal Flang prebuilt release is not yet published. Until it is indexed,
-source-bootstrap builds select source-built ThinLTO Flang with
-`--@llvm//toolchain:bootstrap_stage=stage1_from_source` and
-`--repo_env=HERMETIC_LLVM_INCLUDE_FLANG=1`. The same source opt-in builds
-target intrinsic modules and Flang-RT. The integration module in
-`tests/integration` can use an unmerged Hermetic LLVM checkout through Bazel's
-`--override_module=llvm=<checkout>` flag; no checkout path is stored in this
-repository.
+The integration module pins a Hermetic LLVM revision that indexes the LLVM
+23.1.6 release. The default bootstrap stage downloads the host Flang
+executable. The integration Bazelrc sets
+`--repo_env=HERMETIC_LLVM_INCLUDE_FLANG=1` so Hermetic LLVM can build target
+intrinsic modules and Flang-RT from matching sources.
+
+## Integration CI
+
+Each Linux, macOS, and Windows runner builds the integration suite for both
+Linux x86_64 musl and Linux Arm64 musl. The Linux runners also execute the
+tests for their own CPU. CI checks the selected Flang archive, compiler
+target flag, Hermetic LLVM linker inputs, and ELF architecture of a linked
+module consumer. Builds run locally on each runner.
+
+From `tests/integration`, run a cross build with the pinned Bazel version:
+
+```sh
+bazelisk build //... --platforms=@llvm//platforms:linux_aarch64_musl
+```
+
+On an Arm64 Linux host, add
+`--host_platform=@llvm//platforms:linux_aarch64_musl` to build the module
+merge tool with static musl. Use `test` in place of `build` to run the matching
+target. On x86_64 Linux, use `linux_x86_64_musl` for the host platform.
 
 ## Current boundaries
 
-- Qualified pair: Flang 23.1.2, Linux x86_64 execution, Linux x86_64 musl
-  target, static archives and executables.
+- The integration suite covers static archives and executables targeting
+  Linux musl. Other target ABIs require their own qualification.
 - Libraries compile PIC objects only. Separate PIC and non-PIC outputs remain
   a later design decision.
 - Cross-target module-name collision and arbitrary compiler/module-format

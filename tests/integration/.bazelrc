@@ -1,0 +1,3 @@
+# Build the target intrinsic modules and Flang runtime from matching sources.
+common --repo_env=HERMETIC_LLVM_INCLUDE_FLANG=1
+common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1

@@ -127,3 +127,25 @@ used Bazel 9.3.2. The module's declared Bazel 8 compatibility has not been
 validated here. Other execution/target pairs will be qualified after the
 minimal Flang prebuilts are available. Their toolchain registrations must
 select their own compiler flags, intrinsic modules, and runtime.
+
+## Published Flang follow-up
+
+`FLANG_ARCHIVE=darwin-arm64 /bin/bash ci.sh` in `tests/integration`
+built all 33 targets for each of Linux x86_64 musl and Linux Arm64 musl
+on an Arm64 Mac with Bazel 9.3.2 and the published Flang 23.1.6.
+The script checked the host compiler, target flag, Hermetic LLVM link
+inputs, and ELF architecture for both builds. `llvm-readelf` found no
+interpreter or dynamic segment in either `chain_binary`. The Arm64
+binary also built with Bazel's default output paths.
+
+The initial macOS build failed in the module merge tool because the
+Linux static-link feature requested `crt0.o` from the macOS SDK. The
+helper now uses the host's link policy on macOS and Windows. Bazel
+expands the module trees into file arguments, so the helper does not
+need POSIX directory traversal. A direct helper check preserved binary
+contents, rejected a duplicate module, and produced an empty output
+directory for an empty input list. The Windows implementation compiled
+to x86_64 and Arm64 COFF objects with Zig's MinGW C++ driver.
+
+The Arm64 Mac check is compile and link evidence. The other five runner
+jobs and the two Linux test runs still need results from hosted CI.

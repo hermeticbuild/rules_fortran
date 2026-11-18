@@ -8,6 +8,15 @@ bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.25")
 bazel_dep(name = "rules_fortran", version = "0.0.0")
+
+# Pin the merged Flang integration until it is available in a module release.
+archive_override(
+    module_name = "llvm",
+    integrity = "sha256-zNZTSmBqcpp8ZyCAGPx/isIo13grecZzU1aXCkZnyN0=",
+    strip_prefix = "hermetic-llvm-d316387adbe84b7754ef183c366396bda120962e",
+    urls = ["https://github.com/hermeticbuild/hermetic-llvm/archive/d316387adbe84b7754ef183c366396bda120962e.tar.gz"],
+)
+
 local_path_override(
     module_name = "rules_fortran",
     path = "../..",
