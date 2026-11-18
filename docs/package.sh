@@ -7,9 +7,10 @@ archive="$(cd "$(dirname "$archive")" && pwd)/$(basename "$archive")"
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
 
-bazel build //docs:api "$@" >&2
+bazel=(bazel --nosystem_rc --nohome_rc)
+"${bazel[@]}" build //docs:api "$@" >&2
 files=$(mktemp)
-bazel cquery //docs:api "$@" --output=starlark \
+"${bazel[@]}" cquery //docs:api "$@" --output=starlark \
   --starlark:expr='"\n".join(sorted([f.short_path for f in target.files.to_list()]))' >"$files"
-tar -czf "$archive" -C "$(bazel info bazel-bin "$@")" -T "$files"
+tar -czf "$archive" -C "$("${bazel[@]}" info bazel-bin "$@")" -T "$files"
 echo "API documentation: $archive" >&2

@@ -25,6 +25,7 @@ jobs:
       bazel_test_command: cd tests/integration && bazel test //:chain_test //:c_main_test --lockfile_mode=off
       release_files: rules_fortran-*.tar.gz
       draft: true
+      prerelease: false
   bcr:
     needs: release
     permissions:

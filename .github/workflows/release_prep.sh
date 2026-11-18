@@ -27,7 +27,7 @@ source_dir=$(mktemp -d "${TMPDIR:-/tmp}/rules-fortran-docs.XXXXXX")
 tar -xzf "$archive" -C "$source_dir"
 (
   cd "$source_dir/$prefix"
-  trap 'bazel shutdown >/dev/null 2>&1' EXIT
+  trap 'bazel --nosystem_rc --nohome_rc shutdown >/dev/null 2>&1' EXIT
   bash docs/package.sh "$docs_archive" --lockfile_mode=off
 )
 
