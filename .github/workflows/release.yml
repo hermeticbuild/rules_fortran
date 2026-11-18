@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    uses: ./.github/workflows/ci.yml
+  checks:
+    uses: ./.github/workflows/check.yml
+  release:
+    needs: [tests, checks]
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    # BCR verifies provenance against the named reusable workflow ref.
+    uses: bazel-contrib/.github/.github/workflows/release_ruleset.yaml@v7.7.0
+    with:
+      tag_name: ${{ github.ref_name }}
+      bazel_test_command: cd tests/integration && bazel test //:chain_test //:c_main_test --lockfile_mode=off
+      release_files: rules_fortran-*.tar.gz
+      draft: true
+  bcr:
+    needs: release
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+      attestations: write
+    uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v1.7.0
+    with:
+      tag_name: ${{ github.ref_name }}
+      registry_fork: hermeticbuild/bazel-central-registry
+      draft: true
+    secrets:
+      publish_token: ${{ secrets.BCR_PUBLISH_TOKEN }}
+  publish:
+    needs: bcr
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.ref_name }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - run: gh release edit "$RELEASE_TAG" --draft=false
