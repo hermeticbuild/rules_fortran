@@ -1,131 +1,101 @@
 # rules_fortran
 
-Fortran rules that use a registered compiler for compilation and Bazel's selected
-C/C++ toolchain for native archives and final links. The integration module
-uses the published Flang compiler to build Linux, macOS, and Windows programs.
-GNU Fortran is planned in a later gate.
+Build Fortran libraries, executables, and tests with Bazel. Compile with
+Flang and link with Bazel's selected C/C++ toolchain. C and C++ targets can
+link against Fortran libraries through ordinary Bazel dependencies.
 
-The [gate 4 evidence](docs/gate-4-evidence.md) records the qualified source
-build, action inspection, and remaining limits.
+## Quickstart
 
-## Public rules and providers
+Install [Bazelisk](https://github.com/bazelbuild/bazelisk), then try the
+included examples on Linux x86_64.
 
-Load rules individually:
+```sh
+git clone https://github.com/hermeticbuild/rules_fortran.git
+cd rules_fortran/tests/integration
+bazelisk test //:hello_test //:chain_test //:c_main_test \
+  --platforms=@llvm//platforms:linux_x86_64_musl \
+  --host_platform=@llvm//platforms:linux_x86_64_musl
+```
+
+On macOS Arm64, use `--platforms=@llvm//platforms:macos_aarch64` and omit
+`--host_platform`. The integration module downloads Flang 23.1.6 and uses
+Hermetic LLVM to build the target modules and runtime.
+
+To use the rules in your own Bzlmod project, follow the
+[toolchain setup guide](docs/toolchains.md). It uses a Git checkout of
+`rules_fortran` and a pinned Hermetic LLVM revision.
+
+## Build a module and test it
+
+A target that reads a Fortran module with `use` declares the module's
+library in `deps`. Bazel builds the module before compiling its consumer.
+
+**`BUILD.bazel`**
 
 ```starlark
 load("@rules_fortran//fortran:fortran_library.bzl", "fortran_library")
-load("@rules_fortran//fortran:fortran_binary.bzl", "fortran_binary")
 load("@rules_fortran//fortran:fortran_test.bzl", "fortran_test")
-```
 
-`fortran_library` returns `FortranInfo` and `CcInfo`. `FortranInfo.module_dirs`
-is a depset of compiler-readable module directory artifacts;
-`FortranInfo.defines` propagates preprocessor definitions. `CcInfo` contains
-the archive, native dependencies, and Flang runtime linking context. A C or
-C++ rule can depend on a `fortran_library` through an ordinary `cc_library`
-wrapper that declares the C header for any `bind(C)` procedures. The ruleset
-does not generate C headers.
+fortran_library(
+    name = "arithmetic",
+    srcs = ["arithmetic.f90"],
+)
 
-Each source has its own native object and module-output tree. The C/C++
-toolchain determines whether the compile uses PIC. A library merges its
-source module files into one declared tree for dependents. A source using a
-module from another source needs a `deps` edge to that source's target, so the
-merged tree is a declared compile input. Independent sources may share a
-library target. Empty `fortran_library` targets merge dependencies without
-creating an archive. Final Fortran binaries and tests use `cc_common.link`,
-including the CC toolchain's CRT, libc, builtins, sysroot, and linker policy.
-
-## Toolchain registration
-
-The ruleset owns the toolchain type and provider. A consuming repository
-declares execution/target pairs explicitly:
-
-```starlark
-load("@rules_fortran//fortran/toolchains:fortran_toolchain.bzl", "fortran_toolchain")
-
-fortran_toolchain(
-    name = "flang_linux_x86_64_to_linux_x86_64_musl",
-    compiler_kind = "flang",
-    compiler = "@llvm//tools:flang",
-    intrinsic_modules = "@llvm//runtimes/flang:intrinsic_modules",
-    runtime = "@llvm//runtimes/flang:runtime",
-    target_flags = select({
-        "@llvm//platforms/config:linux_x86_64_musl": ["--target=x86_64-linux-musl"],
+fortran_test(
+    name = "arithmetic_test",
+    srcs = ["arithmetic_test.f90"],
+    features = select({
+        "@llvm//platforms/config:musl": ["fully_static_link"],
+        "//conditions:default": [],
     }),
-)
-
-toolchain(
-    name = "flang_linux_x86_64_to_linux_x86_64_musl_registration",
-    toolchain = ":flang_linux_x86_64_to_linux_x86_64_musl",
-    toolchain_type = "@rules_fortran//fortran:toolchain_type",
-    exec_compatible_with = ["@platforms//os:linux", "@platforms//cpu:x86_64"],
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-        "@llvm//constraints/libc:musl",
-    ],
+    deps = [":arithmetic"],
 )
 ```
 
-The root module registers that package with
-`register_toolchains("//toolchains:all")` and separately registers a compatible
-Hermetic LLVM CC toolchain. The compiler is execution configured; intrinsic
-modules and runtime are target configured. The Flang adapter uses target flags
-from the selected Fortran toolchain. This integration computes
-`--target` from platform constraints with `select()`; production ruleset code
-contains no `@llvm` labels. It does not read a deprecated GNU system-name
-field. Other Flang target pairs require their own qualified compiler, modules,
-runtime, and selected target flags.
+**`arithmetic.f90`**
 
-The integration module pins a Hermetic LLVM revision that indexes the LLVM
-23.1.6 release. The default bootstrap stage downloads the host Flang
-executable. The integration Bazelrc sets
-`--repo_env=HERMETIC_LLVM_INCLUDE_FLANG=1` so Hermetic LLVM can build target
-intrinsic modules and Flang-RT from matching sources.
-
-## Integration CI
-
-Each of the six x86_64 and Arm64 runners builds and runs the integration
-suite for its own OS and CPU. Linux jobs cover musl and glibc. Windows jobs
-cover MinGW and MSVC. Each job checks the selected Flang archive, target
-flag, Hermetic LLVM link inputs, and executable format and architecture.
-All native CI actions run locally on the runner.
-
-The integration also supports explicit cross build probes. A separate
-BuildBuddy lane is planned for cross builds using Linux executors.
-
-From `tests/integration`, run a cross build with the pinned Bazel version:
-
-```sh
-bazelisk build //... --platforms=@llvm//platforms:linux_aarch64_musl
+```fortran
+module arithmetic
+  implicit none
+contains
+  integer function twice(value)
+    integer, intent(in) :: value
+    twice = 2 * value
+  end function twice
+end module arithmetic
 ```
 
-On an Arm64 Linux host, add
-`--host_platform=@llvm//platforms:linux_aarch64_musl` to build the module
-merge tool with static musl. Use `test` in place of `build` to run the matching
-target. On x86_64 Linux, use `linux_x86_64_musl` for the host platform.
+**`arithmetic_test.f90`**
 
-To reproduce the CI checks for a single target from an Arm64 Mac:
-
-```sh
-FLANG_ARCHIVE=darwin-arm64 NATIVE_OS=macos NATIVE_CPU=aarch64 \
-  TARGET_FILTER=macos_aarch64 bash ci.sh
+```fortran
+program arithmetic_test
+  use arithmetic, only: twice
+  implicit none
+  if (twice(21) /= 42) stop 1
+end program arithmetic_test
 ```
 
-## Current boundaries
+Use [`fortran_binary`](fortran/fortran_binary.bzl) for an executable. For a C
+caller, declare the interface in a header and use `bind(C)` in Fortran.
+The [interop example](tests/integration/BUILD.bazel) links
+[a C main](tests/integration/c_main.c) with
+[a Fortran routine](tests/integration/interop.f90).
 
-- Libraries build one object per source. Toolchains with PIC support
-  compile their objects with PIC. Separate PIC and non-PIC outputs remain a
-  later design decision.
-- Cross-target module-name collision and arbitrary compiler/module-format
-  mismatch checks are deferred. The source graph must express inter-target
-  module use. Duplicate module filenames within one library fail at merge.
-- GNU Fortran, shared libraries, Flang-driven linking, OpenMP, coarrays, MPI,
-  coverage, sanitizers, and Fortran ThinLTO are not implemented.
-- Path mapping is advertised for Fortran compile actions. File arguments and
-  dependency module trees use Bazel `Args` and `File` values. CC archive and
-  link action mapping follows the selected CC toolchain. User supplied
-  `copts` containing literal output paths are outside this guarantee.
-- `fastbuild` uses `-O0`, `dbg` uses `-O0 -g`, and `opt` uses `-O2` for Flang
-  compilation. User `copts` follow the mode defaults. Bazel coverage requests
-  fail during analysis until the ruleset supports Fortran instrumentation.
+## Tested platforms
+
+Native CI uses Bazel 9.3.2 and Flang 23.1.6 on x86_64 and Arm64.
+
+| OS | Native targets |
+| --- | --- |
+| Linux | musl and glibc |
+| macOS | macOS system libraries |
+| Windows | MinGW and MSVC |
+
+See the [CI workflow](.github/workflows/ci.yml) and
+[integration evidence](docs/gate-5-evidence.md) for coverage. GNU Fortran
+and shared libraries are planned. The [toolchain guide](docs/toolchains.md)
+describes the current rule behavior and limits.
+
+## License
+
+[MIT](LICENSE)
